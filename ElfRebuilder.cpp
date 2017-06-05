@@ -300,8 +300,13 @@ bool ElfRebuilder::RebuildShdr() {
         shdr.sh_type = SHT_PROGBITS;
         shdr.sh_flags = SHF_ALLOC | SHF_WRITE;
         shdr.sh_addr = shdrs[sLast].sh_addr + shdrs[sLast].sh_size;
+        // Align8??
+        while (shdr.sh_addr & 0x7) {
+            shdr.sh_addr ++;
+        }
+
         shdr.sh_offset = shdr.sh_addr;
-        shdr.sh_size = (Elf_Addr)(si.plt_got + si.plt_rel_count) - shdr.sh_addr - base;
+        shdr.sh_size = (Elf_Addr)(si.plt_got + si.plt_rel_count) - shdr.sh_addr - base + 3 * sizeof(Elf_Addr);
         shdr.sh_link = 0;
         shdr.sh_info = 0;
         shdr.sh_addralign = 4;
