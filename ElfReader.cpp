@@ -92,7 +92,6 @@
 #define PFLAGS_TO_PROT(x)            (MAYBE_MAP_FLAG((x), PF_X, PROT_EXEC) | \
                                       MAYBE_MAP_FLAG((x), PF_R, PROT_READ) | \
                                       MAYBE_MAP_FLAG((x), PF_W, PROT_WRITE))
-#define DL_ERR printf
 ElfReader::ElfReader(const char* name, int fd)
         : name_(name), fd_(fd),
           phdr_num_(0), phdr_mmap_(NULL), phdr_table_(NULL), phdr_size_(0),
@@ -106,6 +105,9 @@ ElfReader::~ElfReader() {
     }
     if (phdr_mmap_ != NULL) {
         delete [](uint8_t*)phdr_mmap_;
+    }
+    if(load_start_ != nullptr) {
+        delete [](uint8_t*)load_start_;
     }
 }
 
@@ -206,6 +208,16 @@ bool ElfReader::ReadProgramHeader() {
 
     phdr_mmap_ = mmap_result;
     phdr_table_ = reinterpret_cast<Elf_Phdr*>(reinterpret_cast<char*>(mmap_result));
+
+    if(dump_so_file_) {
+        auto phdr = phdr_table_;
+        for(auto i = 0; i < phdr_num_; i++) {
+            phdr->p_filesz = phdr->p_memsz;     // expend filesize to memsiz
+            phdr->p_paddr = phdr->p_vaddr;
+            phdr->p_offset = phdr->p_vaddr;     // elf has been loaded.
+            phdr++;
+        }
+    }
     return true;
 }
 
@@ -291,6 +303,8 @@ bool ElfReader::LoadSegments() {
         if (phdr->p_type != PT_LOAD) {
             continue;
         }
+
+        // TODO for dumped file, I need to fix phdr first
 
         // Segment addresses in memory.
         Elf_Addr seg_start = phdr->p_vaddr;
@@ -490,7 +504,6 @@ phdr_table_protect_gnu_relro(const Elf_Phdr* phdr_table,
                                           /*PROT_READ*/0);
 }
 
-#ifdef ANDROID_ARM_LINKER
 
 #  ifndef PT_ARM_EXIDX
 #    define PT_ARM_EXIDX    0x70000001      /* .ARM.exidx segment */
@@ -524,14 +537,13 @@ phdr_table_get_arm_exidx(const Elf_Phdr* phdr_table,
             continue;
 
         *arm_exidx = (Elf_Addr*)(load_bias + phdr->p_vaddr);
-        *arm_exidx_count = (unsigned)(phdr->p_memsz / 8);
+        *arm_exidx_count = (unsigned)(phdr->p_memsz / sizeof(Elf_Addr));
         return 0;
     }
     *arm_exidx = NULL;
     *arm_exidx_count = 0;
     return -1;
 }
-#endif /* ANDROID_ARM_LINKER */
 
 /* Return the address and size of the ELF file's .dynamic section in memory,
  * or NULL if missing.
@@ -565,7 +577,7 @@ phdr_table_get_dynamic_section(const Elf_Phdr* phdr_table,
 
         *dynamic = reinterpret_cast<Elf_Dyn*>(load_bias + phdr->p_vaddr);
         if (dynamic_count) {
-            *dynamic_count = (unsigned)(phdr->p_memsz / 8);
+            *dynamic_count = (unsigned)(phdr->p_memsz / sizeof(Elf_Dyn));
         }
         if (dynamic_flags) {
             *dynamic_flags = phdr->p_flags;
@@ -631,7 +643,7 @@ bool ElfReader::CheckPhdr(Elf_Addr loaded) {
     return false;
 }
 
-bool ElfReader::LoadFileData(void *addr, size_t len, off_t offset) {
+bool ElfReader::LoadFileData(void *addr, size_t len, int offset) {
     lseek(fd_, offset, SEEK_SET);
     auto rc = read(fd_, addr, len);
 

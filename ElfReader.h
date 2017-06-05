@@ -36,8 +36,8 @@ typedef Elf64_Dyn Elf_Dyn;
 typedef Elf64_Word Elf_Word;
 #endif
 
-// TODO fix phdr(file offset)
-// TODO rebuild shdr
+#define DL_ERR printf
+
 class ElfReader {
 public:
     ElfReader(const char* name, int fd);
@@ -51,6 +51,7 @@ public:
     Elf_Addr load_bias() { return load_bias_; }
     const Elf_Phdr* loaded_phdr() { return loaded_phdr_; }
 
+    const Elf_Ehdr* record_ehdr() { return &header_; }
 private:
     bool ReadElfHeader();
     bool VerifyElfHeader();
@@ -59,7 +60,7 @@ private:
     bool LoadSegments();
     bool FindPhdr();
     bool CheckPhdr(Elf_Addr);
-    bool LoadFileData(void* addr, size_t len, off_t offset);
+    bool LoadFileData(void* addr, size_t len, int offset);
 
     const char* name_;
     int fd_;
@@ -80,6 +81,12 @@ private:
 
     // Loaded phdr.
     const Elf_Phdr* loaded_phdr_;
+
+    // feature
+public:
+    void setDumpSoFile(bool b) { dump_so_file_ = b; }
+private:
+    bool dump_so_file_ = false;
 };
 
 
@@ -106,14 +113,11 @@ phdr_table_protect_gnu_relro(const Elf_Phdr* phdr_table,
                              Elf_Addr        load_bias);
 
 
-#ifdef ANDROID_ARM_LINKER
-int
-phdr_table_get_arm_exidx(const Elf_Phdr* phdr_table,
+int phdr_table_get_arm_exidx(const Elf_Phdr* phdr_table,
                          int               phdr_count,
                          Elf_Addr        load_bias,
                          Elf_Addr**      arm_exidx,
                          unsigned*         arm_exidix_count);
-#endif
 
 void
 phdr_table_get_dynamic_section(const Elf_Phdr* phdr_table,

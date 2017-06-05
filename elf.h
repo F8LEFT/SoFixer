@@ -314,6 +314,7 @@ typedef struct
 #define SHT_HISUNW	  0x6fffffff	/* Sun-specific high bound.  */
 #define SHT_HIOS	  0x6fffffff	/* End OS-specific type */
 #define SHT_LOPROC	  0x70000000	/* Start of processor-specific */
+#define SHT_ARMEXIDX  0x70000001
 #define SHT_HIPROC	  0x7fffffff	/* End of processor-specific */
 #define SHT_LOUSER	  0x80000000	/* Start of application-specific */
 #define SHT_HIUSER	  0x8fffffff	/* End of application-specific */
@@ -1382,6 +1383,8 @@ typedef struct
 #define PT_MIPS_REGINFO	0x70000000	/* Register usage information */
 #define PT_MIPS_RTPROC  0x70000001	/* Runtime procedure table. */
 #define PT_MIPS_OPTIONS 0x70000002
+
+#define PT_ARM_EXIDX    0x70000001      /* .ARM.exidx segment */
 
 /* Special program header types.  */
 
