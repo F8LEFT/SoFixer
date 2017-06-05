@@ -52,7 +52,8 @@ bool ElfRebuilder::RebuildShdr() {
         shdr.sh_offset = shdr.sh_addr;
         shdr.sh_size = 0;   // calc sh_size later(pad to next shdr)
         shdr.sh_link = 0;   // link to dynstr later
-        shdr.sh_info = 1;
+//        shdr.sh_info = 1;
+        shdr.sh_info = 0;
         shdr.sh_addralign = 4;
         shdr.sh_entsize = 0x10;
 
@@ -183,6 +184,11 @@ bool ElfRebuilder::RebuildShdr() {
         shdr.sh_type = SHT_PROGBITS;
         shdr.sh_flags = SHF_ALLOC | SHF_EXECINSTR;
         shdr.sh_addr =  shdrs[sPLT].sh_addr + shdrs[sPLT].sh_size;
+        // Align 8
+        while (shdr.sh_addr & 0x7) {
+            shdr.sh_addr ++;
+        }
+
         shdr.sh_offset = shdr.sh_addr;
         shdr.sh_size = 0;       // calc later
         shdr.sh_link = 0;
@@ -295,7 +301,7 @@ bool ElfRebuilder::RebuildShdr() {
         shdr.sh_flags = SHF_ALLOC | SHF_WRITE;
         shdr.sh_addr = shdrs[sLast].sh_addr + shdrs[sLast].sh_size;
         shdr.sh_offset = shdr.sh_addr;
-        shdr.sh_size = (Elf_Addr)(si.plt_got + si.plt_rel_count) - shdr.sh_addr;
+        shdr.sh_size = (Elf_Addr)(si.plt_got + si.plt_rel_count) - shdr.sh_addr - base;
         shdr.sh_link = 0;
         shdr.sh_info = 0;
         shdr.sh_addralign = 4;
@@ -328,26 +334,26 @@ bool ElfRebuilder::RebuildShdr() {
     }
 
     // gen .bss
-    if(true) {
-        sBSS = shdrs.size();
-
-        Elf_Shdr shdr;
-        shdr.sh_name = shstrtab.length();
-        shstrtab.append(".bss");
-        shstrtab.push_back('\0');
-
-        shdr.sh_type = SHT_NOBITS;
-        shdr.sh_flags = SHF_ALLOC | SHF_WRITE;
-        shdr.sh_addr = si.max_load;
-        shdr.sh_offset = shdr.sh_addr;
-        shdr.sh_size = 0;   // not used
-        shdr.sh_link = 0;
-        shdr.sh_info = 0;
-        shdr.sh_addralign = 8;
-        shdr.sh_entsize = 0x0;
-
-        shdrs.push_back(shdr);
-    }
+//    if(true) {
+//        sBSS = shdrs.size();
+//
+//        Elf_Shdr shdr;
+//        shdr.sh_name = shstrtab.length();
+//        shstrtab.append(".bss");
+//        shstrtab.push_back('\0');
+//
+//        shdr.sh_type = SHT_NOBITS;
+//        shdr.sh_flags = SHF_ALLOC | SHF_WRITE;
+//        shdr.sh_addr = si.max_load;
+//        shdr.sh_offset = shdr.sh_addr;
+//        shdr.sh_size = 0;   // not used
+//        shdr.sh_link = 0;
+//        shdr.sh_info = 0;
+//        shdr.sh_addralign = 8;
+//        shdr.sh_entsize = 0x0;
+//
+//        shdrs.push_back(shdr);
+//    }
 
     // gen .shstrtab, pad into last data
     if(true) {
@@ -374,34 +380,53 @@ bool ElfRebuilder::RebuildShdr() {
     // link section data
     if(sDYNSYM != 0) {
         shdrs[sDYNSYM].sh_link = sDYNSTR;
+    }
+
+    // sort shdr and recalc size
+    for(auto i = 1; i < shdrs.size(); i++) {
+        for(auto j = i + 1; j < shdrs.size(); j++) {
+            if(shdrs[i].sh_addr > shdrs[j].sh_addr) {
+                // exchange i, j
+                auto tmp = shdrs[i];
+                shdrs[i] = shdrs[j];
+                shdrs[j] = tmp;
+
+                // exchange index
+                auto chgIdx = [i, j](Elf_Word &t) {
+                    if(t == i) {
+                        t = j;
+                    } else if(t == j) {
+                        t = i;
+                    }
+                };
+                chgIdx(sDYNSYM);
+                chgIdx(sDYNSTR);
+                chgIdx(sHASH);
+                chgIdx(sRELDYN);
+                chgIdx(sRELPLT);
+                chgIdx(sPLT);
+                chgIdx(sTEXTTAB);
+                chgIdx(sARMEXIDX);
+                chgIdx(sFINIARRAY);
+                chgIdx(sINITARRAY);
+                chgIdx(sDYNAMIC);
+                chgIdx(sGOT);
+                chgIdx(sDATA);
+                chgIdx(sBSS);
+                chgIdx(sSHSTRTAB);
+            }
+        }
+    }
+
+    if(sDYNSYM != 0) {
         auto sNext = sDYNSYM + 1;
         shdrs[sDYNSYM].sh_size = shdrs[sNext].sh_addr - shdrs[sDYNSYM].sh_addr;
     }
 
     if(sTEXTTAB != 0) {
-        auto sNext = sDYNSYM + 1;
+        auto sNext = sTEXTTAB + 1;
         shdrs[sTEXTTAB].sh_size = shdrs[sNext].sh_addr - shdrs[sTEXTTAB].sh_addr;
     }
-
-    // TODO fuck relloc in dump
-//    if (si.plt_rel != NULL) {
-//        DEBUG("[ relocating %s plt ]", si->name );
-//        if (soinfo_relocate(si, si->plt_rel, si->plt_rel_count, needed)) {
-//            return false;
-//        }
-//    }
-//    if (si.rel != NULL) {
-//        DEBUG("[ relocating %s ]", si->name );
-//        if (soinfo_relocate(si, si->rel, si->rel_count, needed)) {
-//            return false;
-//        }
-//    }
-
-#ifdef ANDROID_MIPS_LINKER
-    if (!mips_relocate_got(si, needed)) {
-        return false;
-    }
-#endif
 
 //    for(;i < ph_num;i++) {
 //        if (phdr[i].p_type == PT_LOAD) {

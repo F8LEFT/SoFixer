@@ -64,7 +64,7 @@ int main(int argc, char* argv[]) {
 
     close(fd);
 
-    fd = open(output.c_str(), O_WRONLY | O_BINARY | O_CREAT | O_TRUNC);
+    fd = open(output.c_str(), O_WRONLY | O_BINARY | O_CREAT | O_TRUNC, 0666);
     if(fd == -1) {
         printf("output so file cannot write !!!\n");
         return -1;
