@@ -1,10 +1,8 @@
 #include <iostream>
-#include <io.h>
-#include <fcntl.h>
 #include "ElfReader.h"
 #include "ElfRebuilder.h"
 #include <getopt.h>
-#include <string>
+
 
 const char* short_options = "hdps:o:";
 const struct option long_options[] = {
@@ -67,8 +65,7 @@ int main(int argc, char* argv[]) {
         printf("error occured in rebuilding elf file\n");
         return -1;
     }
-
-    close(fd);
+    fclose(file);
 
     file = fopen(output.c_str(), "wb+");
     if(nullptr == file) {

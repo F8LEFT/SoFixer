@@ -9,7 +9,7 @@
 #ifndef SOFIXER_ELFREBUILDER_H
 #define SOFIXER_ELFREBUILDER_H
 
-#include <c++/cstdint>
+#include <cstdint>
 #include "ElfReader.h"
 #include <vector>
 #include <string>

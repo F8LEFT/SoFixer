@@ -9,7 +9,7 @@
 #ifndef SOFIXER_ELFREADER_H
 #define SOFIXER_ELFREADER_H
 
-#include <c++/cstddef>
+#include <cstddef>
 #include "elf.h"
 
 #ifndef S64

@@ -5,9 +5,8 @@
 //===----------------------------------------------------------------------===//
 //
 //===----------------------------------------------------------------------===//
-#include <c++/cstdio>
+#include <cstdio>
 #include "ElfRebuilder.h"
-#include "elf.h"
 
 ElfRebuilder::ElfRebuilder(ElfReader *elf_reader) {
     elf_reader_ = elf_reader;

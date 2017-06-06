@@ -6,11 +6,12 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <io.h>
 #include "ElfReader.h"
-#include "elf.h"
 #include <stdio.h>
-#include <c++/cstdint>
+#include <cstdint>
+#include <cstring>
+#include <fcntl.h>
+
 
 /**
   TECHNICAL NOTE ON ELF LOADING.
