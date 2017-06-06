@@ -6,10 +6,11 @@
 #include <getopt.h>
 #include <string>
 
-const char* short_options = "hds:o:";
+const char* short_options = "hdps:o:";
 const struct option long_options[] = {
         {"help", 0, NULL, 'h'},
         {"dumpso", 0, NULL, 'd'},
+        {"patchinit", 0, NULL, 'p'},
         {"source", 1, NULL, 's'},
         {"output", 1, NULL, 'o'},
         {nullptr, 0, nullptr, 0}
@@ -19,7 +20,7 @@ void useage();
 int main(int argc, char* argv[]) {
     int c;
     std::string source, output;
-    bool isDumpSoFile = false, isValidArg = true;
+    bool isDumpSoFile = false, isPatchInit = false, isValidArg = true;
     while((c = getopt_long(argc, argv, short_options, long_options, nullptr)) != -1) {
         switch (c) {
             case 'd':
@@ -31,6 +32,9 @@ int main(int argc, char* argv[]) {
             case 'o':
                 output = optarg;
                 break;
+            case 'p':
+                isPatchInit = true;
+                break;
             default:
                 isValidArg = false;
                 break;
@@ -40,11 +44,12 @@ int main(int argc, char* argv[]) {
         useage();
     }
 
-    auto fd = open(source.c_str(), O_RDONLY | O_BINARY);
-    if(fd == -1) {
+    auto file = fopen(source.c_str(), "rb");
+    if(nullptr == file) {
         printf("source so file cannot found!!!\n");
         return -1;
     }
+    auto fd = fileno(file);
 
     printf("start to rebuild elf file\n");
 
@@ -57,6 +62,7 @@ int main(int argc, char* argv[]) {
     }
 
     ElfRebuilder elf_rebuilder(&elf_reader);
+    elf_rebuilder.setPatchInit(isPatchInit);
     if(!elf_rebuilder.Rebuild()) {
         printf("error occured in rebuilding elf file\n");
         return -1;
@@ -64,13 +70,13 @@ int main(int argc, char* argv[]) {
 
     close(fd);
 
-    fd = open(output.c_str(), O_WRONLY | O_BINARY | O_CREAT | O_TRUNC, 0666);
-    if(fd == -1) {
+    file = fopen(output.c_str(), "wb+");
+    if(nullptr == file) {
         printf("output so file cannot write !!!\n");
         return -1;
     }
-    write(fd, elf_rebuilder.getRebuildData(), elf_rebuilder.getRebuildSize());
-    close(fd);
+    fwrite(elf_rebuilder.getRebuildData(), elf_rebuilder.getRebuildSize(), 1, file);
+    fclose(file);
 
     printf("Done!!!\n");
     return 0;
@@ -83,6 +89,7 @@ void useage() {
     printf(" Options are:\n");
 
     printf("  -d --dumpso                     Source file is dump from memory\n");
+    printf("  -p --patchinit                  Patch all init function\n");
     printf("  -s --source                     Source file path\n");
     printf("  -o --output                     Generate file path\n");
     printf("  -h --help                       Display this information\n");

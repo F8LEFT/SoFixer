@@ -122,6 +122,11 @@ private:
 
     std::vector<Elf_Shdr> shdrs;
     std::string shstrtab;
+
+private:
+    bool isPatchInit = false;
+public:
+    void setPatchInit(bool b) { isPatchInit = b; }
 };
 
 
