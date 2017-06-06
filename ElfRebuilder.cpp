@@ -462,7 +462,7 @@ bool ElfRebuilder::ReadSoInfo() {
     }
 
     phdr_table_get_arm_exidx(si.phdr, si.phnum, si.base,
-                             &si.ARM_exidx, &si.ARM_exidx_count);
+                             &si.ARM_exidx, (unsigned*)&si.ARM_exidx_count);
 
     // Extract useful information from dynamic section.
     uint32_t needed_count = 0;

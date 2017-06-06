@@ -1,5 +1,7 @@
 #ifndef __ELF_H__
 #define __ELF_H__
+
+#include <stdint.h>
 /* Standard ELF types.  */
 
 /* Type for a 16-bit quantity.  */
@@ -13,18 +15,18 @@ typedef unsigned long Elf64_Word;
 typedef	long  Elf64_Sword;
 
 /* Types for signed and unsigned 64-bit quantities.  */
-typedef unsigned __int64 Elf32_Xword;
-typedef	__int64  Elf32_Sxword;
-typedef unsigned __int64 Elf64_Xword;
-typedef	__int64  Elf64_Sxword;
+typedef uint64_t Elf32_Xword;
+typedef	int64_t  Elf32_Sxword;
+typedef uint64_t Elf64_Xword;
+typedef	int64_t  Elf64_Sxword;
 
 /* Type of addresses.  */
 typedef unsigned long Elf32_Addr;
-typedef unsigned __int64 Elf64_Addr;
+typedef uint64_t Elf64_Addr;
 
 /* Type of file offsets.  */
 typedef unsigned long Elf32_Off;
-typedef unsigned __int64 Elf64_Off;
+typedef uint64_t Elf64_Off;
 
 /* Type for section indices, which are 16-bit quantities.  */
 typedef unsigned short Elf32_Section;

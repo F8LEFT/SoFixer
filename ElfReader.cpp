@@ -11,7 +11,8 @@
 #include <cstdint>
 #include <cstring>
 #include <fcntl.h>
-
+#include <unistd.h>
+#include <errno.h>
 
 /**
   TECHNICAL NOTE ON ELF LOADING.
