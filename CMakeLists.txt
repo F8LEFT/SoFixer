@@ -3,10 +3,6 @@ project(SoFixer)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 
-if(S64)
-    add_definitions(-DS64)
-endif()
-
 aux_source_directory(. ROOT_SRC)
 
 if(SLibrary)

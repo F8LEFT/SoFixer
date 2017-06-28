@@ -8,6 +8,9 @@
 #include <cstdio>
 #include "ElfRebuilder.h"
 
+#define DL_ERR printf
+
+
 ElfRebuilder::ElfRebuilder(ElfReader *elf_reader) {
     elf_reader_ = elf_reader;
 }

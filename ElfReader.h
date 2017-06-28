@@ -9,34 +9,11 @@
 #ifndef SOFIXER_ELFREADER_H
 #define SOFIXER_ELFREADER_H
 
+#import "exelf.h"
+
+
 #include <cstddef>
-#include "elf.h"
 
-#ifndef S64
-typedef Elf32_Ehdr Elf_Ehdr;
-typedef Elf32_Phdr Elf_Phdr;
-typedef Elf32_Shdr Elf_Shdr;
-typedef Elf32_Sym Elf_Sym;
-typedef Elf32_Dyn Elf_Dym;
-typedef Elf32_Rel Elf_Rel;
-typedef Elf32_Rela Elf_Rela;
-typedef Elf32_Addr Elf_Addr;
-typedef Elf32_Dyn Elf_Dyn;
-typedef Elf32_Word Elf_Word;
-#else
-typedef Elf64_Ehdr Elf_Ehdr;
-typedef Elf64_Phdr Elf_Phdr;
-typedef Elf64_Shdr Elf_Shdr;
-typedef Elf64_Sym Elf_Sym;
-typedef Elf64_Dyn Elf_Dym;
-typedef Elf64_Rel Elf_Rel;
-typedef Elf64_Rela Elf_Rela;
-typedef Elf64_Addr Elf_Addr;
-typedef Elf64_Dyn Elf_Dyn;
-typedef Elf64_Word Elf_Word;
-#endif
-
-#define DL_ERR printf
 
 class ElfReader {
 public:

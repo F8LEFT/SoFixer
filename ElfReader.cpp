@@ -90,6 +90,8 @@
 
  **/
 
+#define DL_ERR printf
+
 #define MAYBE_MAP_FLAG(x,from,to)    (((x) & (from)) ? (to) : 0)
 #define PFLAGS_TO_PROT(x)            (MAYBE_MAP_FLAG((x), PF_X, PROT_EXEC) | \
                                       MAYBE_MAP_FLAG((x), PF_R, PROT_READ) | \
@@ -143,7 +145,7 @@ bool ElfReader::VerifyElfHeader() {
         DL_ERR("\"%s\" has bad ELF magic", name_);
         return false;
     }
-#ifndef S64
+#ifndef __LP64__
     if (header_.e_ident[EI_CLASS] != ELFCLASS32) {
         DL_ERR("\"%s\" not 32-bit: %d", name_, header_.e_ident[EI_CLASS]);
         return false;
@@ -167,22 +169,6 @@ bool ElfReader::VerifyElfHeader() {
 
     if (header_.e_version != EV_CURRENT) {
         DL_ERR("\"%s\" has unexpected e_version: %d", name_, header_.e_version);
-        return false;
-    }
-
-    // TODO remove this?
-    if (header_.e_machine !=
-        #ifdef ANDROID_ARM_LINKER
-        EM_ARM
-        #elif defined(ANDROID_MIPS_LINKER)
-        EM_MIPS
-        #elif defined(ANDROID_X86_LINKER)
-        EM_386
-        #else
-        EM_ARM
-        #endif
-            ) {
-        DL_ERR("\"%s\" has unexpected e_machine: %d", name_, header_.e_machine);
         return false;
     }
 
