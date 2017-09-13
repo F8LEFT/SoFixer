@@ -7,12 +7,14 @@
 //===----------------------------------------------------------------------===//
 
 #include "ElfReader.h"
+#include "elf.h"
 #include <stdio.h>
 #include <cstdint>
 #include <cstring>
 #include <fcntl.h>
 #include <unistd.h>
 #include <errno.h>
+#include <vector>
 
 /**
   TECHNICAL NOTE ON ELF LOADING.
@@ -205,6 +207,21 @@ bool ElfReader::ReadProgramHeader() {
             phdr->p_offset = phdr->p_vaddr;     // elf has been loaded.
             phdr++;
         }
+        // Special for PT_LOAD, I assume PT_LOAD is
+        for(auto  i = 0; i < phdr_num_;  i++) {
+            auto phdr = &phdr_table_[i];
+            if(phdr->p_type != PT_LOAD) continue;
+            for(auto j = i+1; j < phdr_num_; j++) {
+                auto nphdr = &phdr_table_[j];
+                if(nphdr->p_type != PT_LOAD) continue;
+                if(nphdr->p_offset < phdr->p_offset) continue;
+                if(nphdr->p_offset - phdr->p_offset != phdr->p_filesz) {
+                    // FIX IT
+                    phdr->p_filesz = nphdr->p_offset - phdr->p_offset;
+                    phdr->p_memsz = phdr->p_filesz;
+                }
+            }
+        }
     }
     return true;
 }
@@ -285,14 +302,13 @@ bool ElfReader::ReserveAddressSpace() {
 // reserve the address space range for the library.
 // TODO: assert assumption.
 bool ElfReader::LoadSegments() {
+    // TODO fix file dada load error, file data between LOAD seg should be loaded
     for (size_t i = 0; i < phdr_num_; ++i) {
         const Elf_Phdr* phdr = &phdr_table_[i];
 
         if (phdr->p_type != PT_LOAD) {
             continue;
         }
-
-        // TODO for dumped file, I need to fix phdr first
 
         // Segment addresses in memory.
         Elf_Addr seg_start = phdr->p_vaddr;
