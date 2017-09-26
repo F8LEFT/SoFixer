@@ -4,33 +4,28 @@
 #include <stdint.h>
 /* Standard ELF types.  */
 
-typedef __uint8_t	Elf_Byte;
+typedef uint8_t	Elf_Byte;
 
-typedef __uint32_t	Elf32_Addr;	/* Unsigned program address */
-typedef __uint32_t	Elf32_Off;	/* Unsigned file offset */
+typedef uint32_t	Elf32_Addr;	/* Unsigned program address */
+typedef uint32_t	Elf32_Off;	/* Unsigned file offset */
 typedef uint64_t Elf32_Xword;
-typedef __int32_t	Elf32_Sword;	/* Signed large integer */
-typedef __uint32_t	Elf32_Word;	/* Unsigned large integer */
-typedef __uint16_t	Elf32_Half;	/* Unsigned medium integer */
+typedef int32_t	Elf32_Sword;	/* Signed large integer */
+typedef uint32_t	Elf32_Word;	/* Unsigned large integer */
+typedef uint16_t	Elf32_Half;	/* Unsigned medium integer */
 
 
-typedef __uint64_t	Elf64_Addr;
-typedef __uint64_t	Elf64_Off;
-typedef __int32_t	Elf64_Shalf;
+typedef uint64_t	Elf64_Addr;
+typedef uint64_t	Elf64_Off;
+typedef int32_t	Elf64_Shalf;
 
-#ifdef __alpha__
-typedef __int64_t	Elf64_Sword;
-typedef __uint64_t	Elf64_Word;
-#else
-typedef __int32_t	Elf64_Sword;
-typedef __uint32_t	Elf64_Word;
-#endif
+typedef int64_t	Elf64_Sword;
+typedef uint64_t	Elf64_Word;
 
-typedef __int64_t	Elf64_Sxword;
-typedef __uint64_t	Elf64_Xword;
+typedef int64_t	Elf64_Sxword;
+typedef uint64_t	Elf64_Xword;
 
-typedef __uint32_t	Elf64_Half;
-typedef __uint16_t	Elf64_Quarter;
+typedef uint32_t	Elf64_Half;
+typedef uint16_t	Elf64_Quarter;
 
 /* Type for version symbol information.  */
 typedef Elf32_Half Elf32_Versym;

@@ -13,14 +13,17 @@
 
 
 #include <cstddef>
+#include <memory.h>
 
+class ElfRebuilder;
 
 class ElfReader {
 public:
-    ElfReader(const char* name, int fd);
+    ElfReader();
     ~ElfReader();
 
     bool Load();
+    void setSource(const char* source, int fd) { name_ = source; fd_ = fd; }
 
     size_t phdr_count() { return phdr_num_; }
     Elf_Addr load_start() { return reinterpret_cast<Elf_Addr>(load_start_); }
@@ -40,6 +43,8 @@ private:
     bool LoadFileData(void* addr, size_t len, int offset);
 
     const char* name_;
+    const char* source_;
+
     int fd_;
 
     Elf_Ehdr header_;
@@ -62,8 +67,13 @@ private:
     // feature
 public:
     void setDumpSoFile(bool b) { dump_so_file_ = b; }
+    void setDumpSoBaseAddr(Elf_Addr base) { dump_so_base_ = base; }
+
 private:
     bool dump_so_file_ = false;
+    Elf_Addr dump_so_base_ = 0;
+
+    friend class ElfRebuilder;
 };
 
 

@@ -8,6 +8,7 @@
 
 #include "ElfReader.h"
 #include "elf.h"
+#include "FDebug.h"
 #include <stdio.h>
 #include <cstdint>
 #include <cstring>
@@ -92,23 +93,19 @@
 
  **/
 
-#define DL_ERR printf
 
 #define MAYBE_MAP_FLAG(x,from,to)    (((x) & (from)) ? (to) : 0)
 #define PFLAGS_TO_PROT(x)            (MAYBE_MAP_FLAG((x), PF_X, PROT_EXEC) | \
                                       MAYBE_MAP_FLAG((x), PF_R, PROT_READ) | \
                                       MAYBE_MAP_FLAG((x), PF_W, PROT_WRITE))
-ElfReader::ElfReader(const char* name, int fd)
-        : name_(name), fd_(fd),
+ElfReader::ElfReader()
+        : source_(nullptr), name_(nullptr), fd_(-1),
           phdr_num_(0), phdr_mmap_(NULL), phdr_table_(NULL), phdr_size_(0),
           load_start_(NULL), load_size_(0), load_bias_(0),
           loaded_phdr_(NULL) {
 }
 
 ElfReader::~ElfReader() {
-    if (fd_ != -1) {
-        close(fd_);
-    }
     if (phdr_mmap_ != NULL) {
         delete [](uint8_t*)phdr_mmap_;
     }
@@ -118,6 +115,7 @@ ElfReader::~ElfReader() {
 }
 
 bool ElfReader::Load() {
+    // try open
     return ReadElfHeader() &&
            VerifyElfHeader() &&
            ReadProgramHeader() &&
@@ -129,11 +127,11 @@ bool ElfReader::Load() {
 bool ElfReader::ReadElfHeader() {
     ssize_t rc = read(fd_, &header_, sizeof(header_));
     if (rc < 0) {
-        DL_ERR("can't read file \"%s\": %s", name_, strerror(errno));
+        FLOGE("can't read file \"%s\": %s\n", name_, strerror(errno));
         return false;
     }
     if (rc != sizeof(header_)) {
-        DL_ERR("\"%s\" is too small to be an ELF executable", name_);
+        FLOGE("\"%s\" is too small to be an ELF executable\n", name_);
         return false;
     }
     return true;
@@ -144,33 +142,33 @@ bool ElfReader::VerifyElfHeader() {
         header_.e_ident[EI_MAG1] != ELFMAG1 ||
         header_.e_ident[EI_MAG2] != ELFMAG2 ||
         header_.e_ident[EI_MAG3] != ELFMAG3) {
-        DL_ERR("\"%s\" has bad ELF magic", name_);
+        FLOGE("\"%s\" has bad ELF magic\n", name_);
         return false;
     }
 #ifndef __LP64__
     if (header_.e_ident[EI_CLASS] != ELFCLASS32) {
-        DL_ERR("\"%s\" not 32-bit: %d", name_, header_.e_ident[EI_CLASS]);
+        FLOGE("\"%s\" not 32-bit: %d\n", name_, header_.e_ident[EI_CLASS]);
         return false;
     }
 #else
     if (header_.e_ident[EI_CLASS] != ELFCLASS64) {
-        DL_ERR("\"%s\" not 64-bit: %d", name_, header_.e_ident[EI_CLASS]);
+        FLOGE("\"%s\" not 64-bit: %d\n", name_, header_.e_ident[EI_CLASS]);
         return false;
     }
 #endif
 
     if (header_.e_ident[EI_DATA] != ELFDATA2LSB) {
-        DL_ERR("\"%s\" not little-endian: %d", name_, header_.e_ident[EI_DATA]);
+        FLOGE("\"%s\" not little-endian: %d\n", name_, header_.e_ident[EI_DATA]);
         return false;
     }
 
     if (header_.e_type != ET_DYN) {
-        DL_ERR("\"%s\" has unexpected e_type: %d", name_, header_.e_type);
+        FLOGE("\"%s\" has unexpected e_type: %d\n", name_, header_.e_type);
         return false;
     }
 
     if (header_.e_version != EV_CURRENT) {
-        DL_ERR("\"%s\" has unexpected e_version: %d", name_, header_.e_version);
+        FLOGE("\"%s\" has unexpected e_version: %d\n", name_, header_.e_version);
         return false;
     }
 
@@ -185,14 +183,14 @@ bool ElfReader::ReadProgramHeader() {
     // Like the kernel, we only accept program header tables that
     // are smaller than 64KiB.
     if (phdr_num_ < 1 || phdr_num_ > 65536/sizeof(Elf_Phdr)) {
-        DL_ERR("\"%s\" has invalid e_phnum: %d", name_, phdr_num_);
+        FLOGE("\"%s\" has invalid e_phnum: %d\n", name_, phdr_num_);
         return false;
     }
 
     phdr_size_ = phdr_num_ * sizeof(Elf_Phdr);
     void* mmap_result = new uint8_t[phdr_size_];
     if(!LoadFileData(mmap_result, phdr_size_, header_.e_phoff)) {
-        DL_ERR("\"%s\" has no valid phdr data", name_);
+        FLOGE("\"%s\" has no valid phdr data\n", name_);
         return false;
     }
 
@@ -284,7 +282,7 @@ bool ElfReader::ReserveAddressSpace() {
     Elf_Addr min_vaddr;
     load_size_ = phdr_table_get_load_size(phdr_table_, phdr_num_, &min_vaddr);
     if (load_size_ == 0) {
-        DL_ERR("\"%s\" has no loadable segments", name_);
+        FLOGE("\"%s\" has no loadable segments\n", name_);
         return false;
     }
 
@@ -331,7 +329,7 @@ bool ElfReader::LoadSegments() {
             // memory data loading
             void* load_point = (uint8_t*)seg_page_start + load_bias_;
             if(!LoadFileData(load_point, file_length, file_page_start)) {
-                DL_ERR("couldn't map \"%s\" segment %d: %s", name_, i, strerror(errno));
+                FLOGE("couldn't map \"%s\" segment %d: %s\n", name_, i, strerror(errno));
                 return false;
             }
 
@@ -622,7 +620,7 @@ bool ElfReader::FindPhdr() {
         }
     }
 
-    DL_ERR("can't find loaded phdr for \"%s\"", name_);
+    FLOGE("can't find loaded phdr for \"%s\"\n", name_);
     return false;
 }
 
@@ -643,7 +641,7 @@ bool ElfReader::CheckPhdr(Elf_Addr loaded) {
             return true;
         }
     }
-    DL_ERR("\"%s\" loaded phdr %x not in loadable segment", name_, loaded);
+    FLOGE("\"%s\" loaded phdr %x not in loadable segment\n", name_, loaded);
     return false;
 }
 
@@ -652,11 +650,11 @@ bool ElfReader::LoadFileData(void *addr, size_t len, int offset) {
     auto rc = read(fd_, addr, len);
 
     if (rc < 0) {
-        DL_ERR("can't read file \"%s\": %s", name_, strerror(errno));
+        FLOGE("can't read file \"%s\": %s\n", name_, strerror(errno));
         return false;
     }
     if (rc != len) {
-        DL_ERR("\"%s\" has no enough data at %x:%x", name_, offset, len);
+        FLOGE("\"%s\" has no enough data at %x:%x, not a valid file or you need to dump more data\n", name_, offset, len);
         return false;
     }
     return true;

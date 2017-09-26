@@ -18,7 +18,7 @@
 #define SOINFO_NAME_LEN 128
 struct soinfo {
 public:
-    char name[SOINFO_NAME_LEN] = "name";
+    const char* name = "name";
     const Elf_Phdr* phdr = nullptr;
     size_t phnum = 0;
     Elf_Addr entry = 0;
@@ -96,7 +96,8 @@ private:
     bool RebuildPhdr();
     bool RebuildShdr();
     bool ReadSoInfo();
-    bool RebuildElf();
+    bool RebuildRelocs();
+    bool RebuildFin();
 
     ElfReader* elf_reader_;
     soinfo si;
