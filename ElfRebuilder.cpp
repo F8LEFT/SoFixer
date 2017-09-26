@@ -639,10 +639,35 @@ bool ElfRebuilder::RebuildFin() {
 bool ElfRebuilder::RebuildRelocs() {
     FLOGD("=======================RebuildRelocs=========================\n");
     if(!elf_reader_->dump_so_file_) return true;
-    for(auto i = 0; i < si.rel_count; i++) {
-        auto prel = reinterpret_cast<Elf_Addr *>(si.load_bias + si.rel[i].r_offset);
-        *prel = *prel - elf_reader_->dump_so_base_;
-    }
+    auto relocate = [](Elf_Addr base, Elf_Rel* rel, size_t count) {
+        if(rel == nullptr || count == 0) return false;
+        for(auto idx = 0; idx < count; idx++, rel++) {
+#ifndef __LP64__
+            auto type = ELF32_R_TYPE(rel->r_info);
+            auto sym = ELF32_R_SYM(rel->r_info);
+#else
+            auto type = ELF64_R_TYPE(rel->r_info);
+            auto sym = ELF64_R_SYM(rel->r_info);
+#endif
+            auto prel = reinterpret_cast<Elf_Addr *>(base + rel->r_offset);
+            if(type == 0) { // R_*_NONE
+                continue;
+            }
+            switch (type) {
+                // I don't known other so info, if i want to fix it, I must dump other so file
+                case R_386_RELATIVE:
+                case R_ARM_RELATIVE:
+                    *prel = *prel - base;
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        return true;
+    };
+    relocate(si.load_bias, si.plt_rel, si.plt_rel_count);
+    relocate(si.load_bias, si.rel, si.rel_count);
     FLOGD("=======================RebuildRelocs End=======================\n");
     return true;
 }
