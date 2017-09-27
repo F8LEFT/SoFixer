@@ -36,10 +36,24 @@ int main(int argc, char* argv[]) {
                 output = optarg;
                 break;
             case 'm': {
+                auto is16Bit = [](const char* c) {
+                    auto len = strlen(c);
+                    if(len > 2) {
+                        if(c[0] == '0' & c[1] == 'x') return true;
+                    }
+                    bool is10bit = true;
+                    for(auto i = 0; i < len; i++) {
+                        if((c[i] > 'a' && c[i] < 'f') ||
+                                c[i] > 'A' && c[i] < 'F') {
+                            is10bit = false;
+                        }
+                    }
+                    return !is10bit;
+                };
 #ifndef __LP64__
-                auto base = strtoul(optarg, 0, 16);
+                auto base = strtoul(optarg, 0, is16Bit(optarg) ? 16: 10);
 #else
-                auto base = strtoull(optarg, 0, 16);
+                auto base = strtoull(optarg, 0, is16Bit(optarg) ? 16: 10);
 #endif
                 elf_reader.setDumpSoFile(true);
                 elf_reader.setDumpSoBaseAddr(base);

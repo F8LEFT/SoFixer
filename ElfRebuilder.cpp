@@ -639,7 +639,7 @@ bool ElfRebuilder::RebuildFin() {
 bool ElfRebuilder::RebuildRelocs() {
     FLOGD("=======================RebuildRelocs=========================\n");
     if(!elf_reader_->dump_so_file_) return true;
-    auto relocate = [](Elf_Addr base, Elf_Rel* rel, size_t count) {
+    auto relocate = [](Elf_Addr base, Elf_Rel* rel, size_t count, Elf_Addr dump_base) {
         if(rel == nullptr || count == 0) return false;
         for(auto idx = 0; idx < count; idx++, rel++) {
 #ifndef __LP64__
@@ -657,7 +657,7 @@ bool ElfRebuilder::RebuildRelocs() {
                 // I don't known other so info, if i want to fix it, I must dump other so file
                 case R_386_RELATIVE:
                 case R_ARM_RELATIVE:
-                    *prel = *prel - base;
+                    *prel = *prel - dump_base;
                     break;
                 default:
                     break;
@@ -666,8 +666,8 @@ bool ElfRebuilder::RebuildRelocs() {
 
         return true;
     };
-    relocate(si.load_bias, si.plt_rel, si.plt_rel_count);
-    relocate(si.load_bias, si.rel, si.rel_count);
+    relocate(si.load_bias, si.plt_rel, si.plt_rel_count, elf_reader_->dump_so_base_);
+    relocate(si.load_bias, si.rel, si.rel_count, elf_reader_->dump_so_base_);
     FLOGD("=======================RebuildRelocs End=======================\n");
     return true;
 }
