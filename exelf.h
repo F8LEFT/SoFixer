@@ -37,7 +37,7 @@ typedef Elf64_Word Elf_Word;
 
 #ifndef PAGE_SIZE
 #define PAGE_SIZE 0x1000
-#endif
+
 #define PAGE_MASK (~(PAGE_SIZE-1))
 // Returns the address of the page containing address 'x'.
 #define PAGE_START(x)  ((x) & PAGE_MASK)
@@ -48,5 +48,6 @@ typedef Elf64_Word Elf_Word;
 // Returns the address of the next page after address 'x', unless 'x' is
 // itself at the start of a page.
 #define PAGE_END(x)    PAGE_START((x) + (PAGE_SIZE-1))
+#endif
 
 #endif //FAOATDUMP_EXELF_H

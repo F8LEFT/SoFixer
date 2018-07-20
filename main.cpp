@@ -91,13 +91,15 @@ int main(int argc, char* argv[]) {
     }
     fclose(file);
 
-    file = fopen(output.c_str(), "wb+");
-    if(nullptr == file) {
-        printf("output so file cannot write !!!\n");
-        return -1;
+    if (!output.empty()) {
+        file = fopen(output.c_str(), "wb+");
+        if(nullptr == file) {
+            printf("output so file cannot write !!!\n");
+            return -1;
+        }
+        fwrite(elf_rebuilder.getRebuildData(), elf_rebuilder.getRebuildSize(), 1, file);
+        fclose(file);
     }
-    fwrite(elf_rebuilder.getRebuildData(), elf_rebuilder.getRebuildSize(), 1, file);
-    fclose(file);
 
     printf("Done!!!\n");
     return 0;
