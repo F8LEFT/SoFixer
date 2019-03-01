@@ -22,7 +22,7 @@ public:
     const Elf_Phdr* phdr = nullptr;
     size_t phnum = 0;
     Elf_Addr entry = 0;
-    Elf_Addr base = 0;
+    uint8_t * base = 0;
     unsigned size = 0;
 
     Elf_Addr min_load;
@@ -42,7 +42,7 @@ public:
     const char* strtab = nullptr;
     Elf_Sym* symtab = nullptr;
 
-    Elf_Addr hash = 0;
+    uint8_t * hash = 0;
     size_t strtabsize = 0;
     size_t nbucket = 0;
     size_t nchain = 0;
@@ -77,7 +77,7 @@ public:
 
     // When you read a virtual address from the ELF file, add this
     // value to get the corresponding address in the process' address space.
-    Elf_Addr load_bias = 0;
+    uint8_t * load_bias = nullptr;
 
     bool has_text_relocations = false;
     bool has_DT_SYMBOLIC = false;

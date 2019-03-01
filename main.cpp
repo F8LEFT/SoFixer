@@ -43,7 +43,7 @@ int main(int argc, char* argv[]) {
                     bool is10bit = true;
                     for(auto i = 0; i < len; i++) {
                         if((c[i] > 'a' && c[i] < 'f') ||
-                                c[i] > 'A' && c[i] < 'F') {
+                           (c[i] > 'A' && c[i] < 'F')) {
                             is10bit = false;
                         }
                     }

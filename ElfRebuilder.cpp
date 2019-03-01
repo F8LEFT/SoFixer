@@ -16,7 +16,7 @@ ElfRebuilder::ElfRebuilder(ElfReader *elf_reader) {
 }
 
 bool ElfRebuilder::RebuildPhdr() {
-    FLOGD("=======================RebuildPhdr=========================\n");
+    FLOGD("=======================RebuildPhdr=========================");
     auto phdr = (Elf_Phdr*)elf_reader_->loaded_phdr();
     for(auto i = 0; i < elf_reader_->phdr_count(); i++) {
         phdr->p_filesz = phdr->p_memsz;     // expend filesize to memsiz
@@ -26,12 +26,12 @@ bool ElfRebuilder::RebuildPhdr() {
         phdr->p_offset = phdr->p_vaddr;     // elf has been loaded.
         phdr++;
     }
-    FLOGD("=====================RebuildPhdr End======================\n");
+    FLOGD("=====================RebuildPhdr End======================");
     return true;
 }
 
 bool ElfRebuilder::RebuildShdr() {
-    FLOGD("=======================RebuildShdr=========================\n");
+    FLOGD("=======================RebuildShdr=========================");
     // rebuilding shdr, link information
     auto base = si.load_bias;
     shstrtab.push_back('\0');
@@ -53,7 +53,7 @@ bool ElfRebuilder::RebuildShdr() {
 
         shdr.sh_type = SHT_DYNSYM;
         shdr.sh_flags = SHF_ALLOC;
-        shdr.sh_addr = (Elf_Addr)si.symtab - base;
+        shdr.sh_addr = (uintptr_t)si.symtab - (uintptr_t)base;
         shdr.sh_offset = shdr.sh_addr;
         shdr.sh_size = 0;   // calc sh_size later(pad to next shdr)
         shdr.sh_link = 0;   // link to dynstr later
@@ -76,7 +76,7 @@ bool ElfRebuilder::RebuildShdr() {
 
         shdr.sh_type = SHT_STRTAB;
         shdr.sh_flags = SHF_ALLOC;
-        shdr.sh_addr = (Elf_Addr)si.strtab - base;
+        shdr.sh_addr = (uintptr_t)si.strtab - (uintptr_t)base;
         shdr.sh_offset = shdr.sh_addr;
         shdr.sh_size = si.strtabsize;
         shdr.sh_link = 0;
@@ -121,7 +121,7 @@ bool ElfRebuilder::RebuildShdr() {
 
         shdr.sh_type = SHT_REL;
         shdr.sh_flags = SHF_ALLOC;
-        shdr.sh_addr = (Elf_Addr)si.rel - base;
+        shdr.sh_addr = (uintptr_t)si.rel - (uintptr_t)base;
         shdr.sh_offset = shdr.sh_addr;
         shdr.sh_size = si.rel_count * sizeof(Elf_Rel);
         shdr.sh_link = sDYNSYM;
@@ -143,7 +143,7 @@ bool ElfRebuilder::RebuildShdr() {
 
         shdr.sh_type = SHT_REL;
         shdr.sh_flags = SHF_ALLOC;
-        shdr.sh_addr = (Elf_Addr)si.plt_rel - base;
+        shdr.sh_addr = (uintptr_t)si.plt_rel - (uintptr_t)base;
         shdr.sh_offset = shdr.sh_addr;
         shdr.sh_size = si.plt_rel_count * sizeof(Elf_Rel);
         shdr.sh_link = sDYNSYM;
@@ -215,7 +215,7 @@ bool ElfRebuilder::RebuildShdr() {
 
         shdr.sh_type = SHT_ARMEXIDX;
         shdr.sh_flags = SHF_ALLOC | SHF_LINK_ORDER;
-        shdr.sh_addr = (Elf_Addr)si.ARM_exidx - base;
+        shdr.sh_addr = (uintptr_t)si.ARM_exidx - (uintptr_t)base;
         shdr.sh_offset = shdr.sh_addr;
         shdr.sh_size = si.ARM_exidx_count * sizeof(Elf_Addr);
         shdr.sh_link = sTEXTTAB;
@@ -236,7 +236,7 @@ bool ElfRebuilder::RebuildShdr() {
 
         shdr.sh_type = SHT_FINI_ARRAY;
         shdr.sh_flags = SHF_ALLOC | SHF_WRITE;
-        shdr.sh_addr = (Elf_Addr)si.fini_array - base;
+        shdr.sh_addr = (uintptr_t)si.fini_array - (uintptr_t)base;
         shdr.sh_offset = shdr.sh_addr;
         shdr.sh_size = si.fini_array_count * sizeof(Elf_Addr);
         shdr.sh_link = 0;
@@ -258,7 +258,7 @@ bool ElfRebuilder::RebuildShdr() {
 
         shdr.sh_type = SHT_INIT_ARRAY;
         shdr.sh_flags = SHF_ALLOC | SHF_WRITE;
-        shdr.sh_addr = (Elf_Addr)si.init_array - base;
+        shdr.sh_addr = (uintptr_t)si.init_array - (uintptr_t)base;
         shdr.sh_offset = shdr.sh_addr;
         shdr.sh_size = si.init_array_count * sizeof(Elf_Addr);
         shdr.sh_link = 0;
@@ -280,7 +280,7 @@ bool ElfRebuilder::RebuildShdr() {
 
         shdr.sh_type = SHT_DYNAMIC;
         shdr.sh_flags = SHF_ALLOC | SHF_WRITE;
-        shdr.sh_addr = (Elf_Addr)si.dynamic - base;
+        shdr.sh_addr = (uintptr_t)si.dynamic - (uintptr_t)base;
         shdr.sh_offset = shdr.sh_addr;
         shdr.sh_size = si.dynamic_count * sizeof(Elf_Dyn);
         shdr.sh_link = sDYNSTR;
@@ -311,7 +311,7 @@ bool ElfRebuilder::RebuildShdr() {
         }
 
         shdr.sh_offset = shdr.sh_addr;
-        shdr.sh_size = (Elf_Addr)(si.plt_got + si.plt_rel_count) - shdr.sh_addr - base + 3 * sizeof(Elf_Addr);
+        shdr.sh_size = (uintptr_t)(si.plt_got + si.plt_rel_count) - shdr.sh_addr - (uintptr_t)base + 3 * sizeof(Elf_Addr);
         shdr.sh_link = 0;
         shdr.sh_info = 0;
         shdr.sh_addralign = 4;
@@ -445,7 +445,7 @@ bool ElfRebuilder::RebuildShdr() {
         }
     }
 
-    FLOGD("=====================RebuildShdr End======================\n");
+    FLOGD("=====================RebuildShdr End======================");
     return true;
 }
 
@@ -454,7 +454,7 @@ bool ElfRebuilder::Rebuild() {
 }
 
 bool ElfRebuilder::ReadSoInfo() {
-    FLOGD("=======================ReadSoInfo=========================\n");
+    FLOGD("=======================ReadSoInfo=========================");
     si.base = si.load_bias = elf_reader_->load_bias();
     si.phdr = elf_reader_->loaded_phdr();
     si.phnum = elf_reader_->phdr_count();
@@ -465,7 +465,7 @@ bool ElfRebuilder::ReadSoInfo() {
     phdr_table_get_dynamic_section(si.phdr, si.phnum, si.base, &si.dynamic,
                                    &si.dynamic_count, &si.dynamic_flags);
     if(si.dynamic == nullptr) {
-        FLOGE("No valid dynamic phdr data\n");
+        FLOGE("No valid dynamic phdr data");
         return false;
     }
 
@@ -477,7 +477,7 @@ bool ElfRebuilder::ReadSoInfo() {
     for (Elf_Dyn* d = si.dynamic; d->d_tag != DT_NULL; ++d) {
         switch(d->d_tag){
             case DT_HASH:
-                si.hash = d->d_un.d_ptr + base;
+                si.hash = d->d_un.d_ptr + (uint8_t*)base;
                 si.nbucket = ((unsigned *) (base + d->d_un.d_ptr))[0];
                 si.nchain = ((unsigned *) (base + d->d_un.d_ptr))[1];
                 si.bucket = (unsigned *) (base + d->d_un.d_ptr + 8);
@@ -485,33 +485,33 @@ bool ElfRebuilder::ReadSoInfo() {
                 break;
             case DT_STRTAB:
                 si.strtab = (const char *) (base + d->d_un.d_ptr);
-                FLOGD("string table found at %x\n", d->d_un.d_ptr);
+                FLOGD("string table found at %x", d->d_un.d_ptr);
                 break;
             case DT_SYMTAB:
                 si.symtab = (Elf_Sym *) (base + d->d_un.d_ptr);
-                FLOGD("symbol table found at %x\n", d->d_un.d_ptr);
+                FLOGD("symbol table found at %x", d->d_un.d_ptr);
                 break;
             case DT_PLTREL:
                 if (d->d_un.d_val != DT_REL) {
-                    FLOGE("unsupported DT_RELA in \"%s\"\n", si.name);
+                    FLOGE("unsupported DT_RELA in \"%s\"", si.name);
                     return false;
                 }
                 break;
             case DT_JMPREL:
                 si.plt_rel = (Elf_Rel*) (base + d->d_un.d_ptr);
-                FLOGD("%s plt_rel (DT_JMPREL) found at %x\n", si.name, d->d_un.d_ptr);
+                FLOGD("%s plt_rel (DT_JMPREL) found at %x", si.name, d->d_un.d_ptr);
                 break;
             case DT_PLTRELSZ:
                 si.plt_rel_count = d->d_un.d_val / sizeof(Elf_Rel);
-                FLOGD("%s plt_rel_count (DT_PLTRELSZ) %d\n", si.name, si.plt_rel_count);
+                FLOGD("%s plt_rel_count (DT_PLTRELSZ) %zu", si.name, si.plt_rel_count);
                 break;
             case DT_REL:
                 si.rel = (Elf_Rel*) (base + d->d_un.d_ptr);
-                FLOGD("%s rel (DT_REL) found at %x\n", si.name, d->d_un.d_ptr);
+                FLOGD("%s rel (DT_REL) found at %x", si.name, d->d_un.d_ptr);
                 break;
             case DT_RELSZ:
                 si.rel_count = d->d_un.d_val / sizeof(Elf_Rel);
-                FLOGD("%s rel_size (DT_RELSZ) %d\n", si.name, si.rel_count);
+                FLOGD("%s rel_size (DT_RELSZ) %zu", si.name, si.rel_count);
                 break;
             case DT_PLTGOT:
                 /* Save this in case we decide to do lazy binding. We don't yet. */
@@ -522,39 +522,39 @@ bool ElfRebuilder::ReadSoInfo() {
                 // if the dynamic table is writable
                 break;
             case DT_RELA:
-                FLOGE("unsupported DT_RELA in \"%s\"\n", si.name);
+                FLOGE("unsupported DT_RELA in \"%s\"", si.name);
                 return false;
             case DT_INIT:
                 si.init_func = reinterpret_cast<void*>(base + d->d_un.d_ptr);
-                FLOGD("%s constructors (DT_INIT) found at %x\n", si.name, d->d_un.d_ptr);
+                FLOGD("%s constructors (DT_INIT) found at %x", si.name, d->d_un.d_ptr);
                 break;
             case DT_FINI:
                 si.fini_func = reinterpret_cast<void*>(base + d->d_un.d_ptr);
-                FLOGD("%s destructors (DT_FINI) found at %x\n", si.name, d->d_un.d_ptr);
+                FLOGD("%s destructors (DT_FINI) found at %x", si.name, d->d_un.d_ptr);
                 break;
             case DT_INIT_ARRAY:
                 si.init_array = reinterpret_cast<void**>(base + d->d_un.d_ptr);
-                FLOGD("%s constructors (DT_INIT_ARRAY) found at %x\n", si.name, d->d_un.d_ptr);
+                FLOGD("%s constructors (DT_INIT_ARRAY) found at %x", si.name, d->d_un.d_ptr);
                 break;
             case DT_INIT_ARRAYSZ:
                 si.init_array_count = ((unsigned)d->d_un.d_val) / sizeof(Elf_Addr);
-                FLOGD("%s constructors (DT_INIT_ARRAYSZ) %d\n", si.name, si.init_array_count);
+                FLOGD("%s constructors (DT_INIT_ARRAYSZ) %zu", si.name, si.init_array_count);
                 break;
             case DT_FINI_ARRAY:
                 si.fini_array = reinterpret_cast<void**>(base + d->d_un.d_ptr);
-                FLOGD("%s destructors (DT_FINI_ARRAY) found at %x\n", si.name, d->d_un.d_ptr);
+                FLOGD("%s destructors (DT_FINI_ARRAY) found at %x", si.name, d->d_un.d_ptr);
                 break;
             case DT_FINI_ARRAYSZ:
                 si.fini_array_count = ((unsigned)d->d_un.d_val) / sizeof(Elf_Addr);
-                FLOGD("%s destructors (DT_FINI_ARRAYSZ) %d\n", si.name, si.fini_array_count);
+                FLOGD("%s destructors (DT_FINI_ARRAYSZ) %zu", si.name, si.fini_array_count);
                 break;
             case DT_PREINIT_ARRAY:
                 si.preinit_array = reinterpret_cast<void**>(base + d->d_un.d_ptr);
-                FLOGD("%s constructors (DT_PREINIT_ARRAY) found at %d\n", si.name, d->d_un.d_ptr);
+                FLOGD("%s constructors (DT_PREINIT_ARRAY) found at %d", si.name, d->d_un.d_ptr);
                 break;
             case DT_PREINIT_ARRAYSZ:
                 si.preinit_array_count = ((unsigned)d->d_un.d_val) / sizeof(Elf_Addr);
-                FLOGD("%s constructors (DT_PREINIT_ARRAYSZ) %d\n", si.preinit_array_count);
+                FLOGD("%s constructors (DT_PREINIT_ARRAYSZ) %zu", si.name, si.preinit_array_count);
                 break;
             case DT_TEXTREL:
                 si.has_text_relocations = true;
@@ -601,20 +601,20 @@ bool ElfRebuilder::ReadSoInfo() {
                 break;
             case DT_SONAME:
                 si.name = (const char *) (base + d->d_un.d_ptr);
-                FLOGD("soname %s\n", si.name);
+                FLOGD("soname %s", si.name);
                 break;
             default:
-                FLOGD("Unused DT entry: type 0x%08x arg 0x%08x\n", d->d_tag, d->d_un.d_val);
+                FLOGD("Unused DT entry: type 0x%08x arg 0x%08x", d->d_tag, d->d_un.d_val);
                 break;
         }
     }
-    FLOGD("=======================ReadSoInfo End=========================\n");
+    FLOGD("=======================ReadSoInfo End=========================");
     return true;
 }
 
 // Finally, generate rebuild_data
 bool ElfRebuilder::RebuildFin() {
-    FLOGD("=======================try to finish file=========================\n");
+    FLOGD("=======================try to finish file=========================");
     auto load_size = si.max_load - si.min_load;
     rebuild_size = load_size + shstrtab.length() +
             shdrs.size() * sizeof(Elf_Shdr);
@@ -632,14 +632,14 @@ bool ElfRebuilder::RebuildFin() {
     ehdr.e_shstrndx = sSHSTRTAB;
     memcpy(rebuild_data, &ehdr, sizeof(Elf_Ehdr));
 
-    FLOGD("=======================End=========================\n");
+    FLOGD("=======================End=========================");
     return true;
 }
 
 bool ElfRebuilder::RebuildRelocs() {
-    FLOGD("=======================RebuildRelocs=========================\n");
+    FLOGD("=======================RebuildRelocs=========================");
     if(!elf_reader_->dump_so_file_) return true;
-    auto relocate = [](Elf_Addr base, Elf_Rel* rel, size_t count, Elf_Addr dump_base) {
+    auto relocate = [](uint8_t * base, Elf_Rel* rel, size_t count, Elf_Addr dump_base) {
         if(rel == nullptr || count == 0) return false;
         for(auto idx = 0; idx < count; idx++, rel++) {
 #ifndef __SO64__
@@ -668,7 +668,7 @@ bool ElfRebuilder::RebuildRelocs() {
     };
     relocate(si.load_bias, si.plt_rel, si.plt_rel_count, elf_reader_->dump_so_base_);
     relocate(si.load_bias, si.rel, si.rel_count, elf_reader_->dump_so_base_);
-    FLOGD("=======================RebuildRelocs End=======================\n");
+    FLOGD("=======================RebuildRelocs End=======================");
     return true;
 }
 
