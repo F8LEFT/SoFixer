@@ -1,18 +1,31 @@
 //===------------------------------------------------------------*- C++ -*-===//
 //
-//                     Created by F8LEFT on 2017/9/13.
-//                   Copyright (c) 2017. All rights reserved.
+//                     Created by F8LEFT on 2018/7/4.
+//                   Copyright (c) 2018. All rights reserved.
 //===----------------------------------------------------------------------===//
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef SOFIXER_FDEBUG_H
-#define SOFIXER_FDEBUG_H
+#ifndef ANDDBG_ALOG_H
+#define ANDDBG_ALOG_H
 
-extern bool FDebug;
+#if !defined(NDEBUG)
 
-#define FLOGE(fmt, ...) printf(fmt, ##__VA_ARGS__)
-#define FLOGD(fmt, ...) if(FDebug) printf(fmt, ##__VA_ARGS__)
+#define TOSTR(fmt) #fmt
+#define FLFMT TOSTR([%s:%d])
+#define FNLINE TOSTR(\n)
 
+#define FLOGE(fmt, ...) printf(FLFMT fmt FNLINE, __FUNCTION__, __LINE__, ##__VA_ARGS__)
+#define FLOGD(fmt, ...) printf(FLFMT fmt FNLINE, __FUNCTION__, __LINE__, ##__VA_ARGS__)
+#define FLOGW(fmt, ...) printf(FLFMT fmt FNLINE, __FUNCTION__, __LINE__, ##__VA_ARGS__)
+#define FLOGI(fmt, ...) printf(FLFMT fmt FNLINE, __FUNCTION__, __LINE__, ##__VA_ARGS__)
+#define FLOGV(fmt, ...) printf(FLFMT fmt FNLINE, __FUNCTION__, __LINE__, ##__VA_ARGS__)
+#else
+#define FLOGE(fmt, ...)
+#define FLOGD(fmt, ...)
+#define FLOGW(fmt, ...)
+#define FLOGI(fmt, ...)
+#define FLOGV(fmt, ...)
+#endif
 
-#endif //SOFIXER_FDEBUG_H
+#endif //ANDDBG_ALOG_H

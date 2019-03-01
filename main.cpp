@@ -26,7 +26,6 @@ int main(int argc, char* argv[]) {
     while((c = getopt_long(argc, argv, short_options, long_options, nullptr)) != -1) {
         switch (c) {
             case 'd':
-                FDebug = true;
                 printf("Use debug mode\n");
                 break;
             case 's':
@@ -50,7 +49,7 @@ int main(int argc, char* argv[]) {
                     }
                     return !is10bit;
                 };
-#ifndef __LP64__
+#ifndef __SO64__
                 auto base = strtoul(optarg, 0, is16Bit(optarg) ? 16: 10);
 #else
                 auto base = strtoull(optarg, 0, is16Bit(optarg) ? 16: 10);
