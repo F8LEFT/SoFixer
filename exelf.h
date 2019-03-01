@@ -11,7 +11,7 @@
 
 #include "elf.h"
 
-#ifndef __LP64__
+#ifndef __SO64__
 typedef Elf32_Ehdr Elf_Ehdr;
 typedef Elf32_Phdr Elf_Phdr;
 typedef Elf32_Shdr Elf_Shdr;

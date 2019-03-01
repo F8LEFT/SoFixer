@@ -145,7 +145,7 @@ bool ElfReader::VerifyElfHeader() {
         FLOGE("\"%s\" has bad ELF magic\n", name_);
         return false;
     }
-#ifndef __LP64__
+#ifndef __SO64__
     if (header_.e_ident[EI_CLASS] != ELFCLASS32) {
         FLOGE("\"%s\" not 32-bit: %d\n", name_, header_.e_ident[EI_CLASS]);
         return false;
