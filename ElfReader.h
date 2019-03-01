@@ -23,7 +23,7 @@ public:
     ~ElfReader();
 
     bool Load();
-    void setSource(const char* source, int fd) { name_ = source; fd_ = fd; }
+    void setSource(const char* source, int fd);
 
     size_t phdr_count() { return phdr_num_; }
     uint8_t * load_start() { return load_start_; }
@@ -42,6 +42,8 @@ private:
     bool CheckPhdr(uint8_t *);
     bool LoadFileData(void* addr, size_t len, int offset);
 
+    bool PatchPhdr();
+
     const char* name_;
     const char* source_;
 
@@ -58,6 +60,7 @@ private:
     uint8_t * load_start_;
     // Size in bytes of reserved address space.
     Elf_Addr load_size_;
+    size_t file_size;
     // Load bias.
     uint8_t * load_bias_;
 

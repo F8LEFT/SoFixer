@@ -121,7 +121,8 @@ bool ElfReader::Load() {
            ReadProgramHeader() &&
            ReserveAddressSpace() &&
            LoadSegments() &&
-           FindPhdr();
+           FindPhdr() &&
+           PatchPhdr();
 }
 
 bool ElfReader::ReadElfHeader() {
@@ -205,19 +206,25 @@ bool ElfReader::ReadProgramHeader() {
             phdr->p_offset = phdr->p_vaddr;     // elf has been loaded.
             phdr++;
         }
-        // Special for PT_LOAD, I assume PT_LOAD is
-        for(auto  i = 0; i < phdr_num_;  i++) {
+        // fix phdr, just load all data
+        std::vector<Elf32_Phdr*> loaded_phdrs;
+        for (auto i = 0; i < phdr_num_; i++) {
             auto phdr = &phdr_table_[i];
             if(phdr->p_type != PT_LOAD) continue;
-            for(auto j = i+1; j < phdr_num_; j++) {
-                auto nphdr = &phdr_table_[j];
-                if(nphdr->p_type != PT_LOAD) continue;
-                if(nphdr->p_offset < phdr->p_offset) continue;
-                if(nphdr->p_offset - phdr->p_offset != phdr->p_filesz) {
-                    // FIX IT
-                    phdr->p_filesz = nphdr->p_offset - phdr->p_offset;
-                    phdr->p_memsz = phdr->p_filesz;
-                }
+            loaded_phdrs.push_back(phdr);
+        }
+        if (!loaded_phdrs.empty()) {
+            for (unsigned long i = 0, total = loaded_phdrs.size(); i < total; i++) {
+                auto phdr = loaded_phdrs[i];
+              if (i != total - 1) {
+                // to next loaded segament
+                  auto nphdr = loaded_phdrs[i+1];
+                  phdr->p_memsz = nphdr->p_vaddr - phdr->p_vaddr;
+              } else {
+                  // to the file end
+                  phdr->p_memsz = file_size - phdr->p_vaddr;
+              }
+              phdr->p_filesz = phdr->p_memsz;
             }
         }
     }
@@ -625,6 +632,12 @@ bool ElfReader::FindPhdr() {
     return false;
 }
 
+bool ElfReader::PatchPhdr() {
+    const Elf_Phdr* phdr_limit = phdr_table_ + phdr_num_;
+    memcpy((void*)loaded_phdr_, (void*)phdr_table_, (uintptr_t)phdr_limit - (uintptr_t)phdr_table_ );
+    return true;
+}
+
 // Ensures that our program header is actually within a loadable
 // segment. This should help catch badly-formed ELF files that
 // would cause the linker to crash later when trying to access it.
@@ -659,4 +672,11 @@ bool ElfReader::LoadFileData(void *addr, size_t len, int offset) {
         return false;
     }
     return true;
+}
+
+void ElfReader::setSource(const char *source, int fd) {
+    name_ = source;
+    fd_ = fd;
+    file_size = lseek(fd_, 0L, SEEK_END);
+    lseek(fd_, 0L, SEEK_SET);
 }
