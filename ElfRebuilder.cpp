@@ -10,6 +10,11 @@
 #include "elf.h"
 #include "FDebug.h"
 
+#ifdef __SO64__
+#define ADDRESS_FORMAT "ll"
+#else
+#define ADDRESS_FORMAT ""
+#endif
 
 ElfRebuilder::ElfRebuilder(ElfReader *elf_reader) {
     elf_reader_ = elf_reader;
@@ -565,18 +570,18 @@ bool ElfRebuilder::ReadSoInfo() {
                 break;
             case DT_STRTAB:
                 si.strtab = (const char *) (base + d->d_un.d_ptr);
-                FLOGD("string table found at %x", d->d_un.d_ptr);
+                FLOGD("string table found at %" ADDRESS_FORMAT "x", d->d_un.d_ptr);
                 break;
             case DT_SYMTAB:
                 si.symtab = (Elf_Sym *) (base + d->d_un.d_ptr);
-                FLOGD("symbol table found at %x", d->d_un.d_ptr);
+                FLOGD("symbol table found at %" ADDRESS_FORMAT "x", d->d_un.d_ptr);
                 break;
             case DT_PLTREL:
               si.plt_type = d->d_un.d_val;
                 break;
             case DT_JMPREL:
                 si.plt_rel = (Elf_Rel*) (base + d->d_un.d_ptr);
-                FLOGD("%s plt_rel (DT_JMPREL) found at %x", si.name, d->d_un.d_ptr);
+                FLOGD("%s plt_rel (DT_JMPREL) found at %" ADDRESS_FORMAT "x", si.name, d->d_un.d_ptr);
                 break;
             case DT_PLTRELSZ:
                 si.plt_rel_count = d->d_un.d_val / sizeof(Elf_Rel);
@@ -584,7 +589,7 @@ bool ElfRebuilder::ReadSoInfo() {
                 break;
             case DT_REL:
                 si.rel = (Elf_Rel*) (base + d->d_un.d_ptr);
-                FLOGD("%s rel (DT_REL) found at %x", si.name, d->d_un.d_ptr);
+                FLOGD("%s rel (DT_REL) found at %" ADDRESS_FORMAT "x", si.name, d->d_un.d_ptr);
                 break;
             case DT_RELSZ:
                 si.rel_count = d->d_un.d_val / sizeof(Elf_Rel);
@@ -606,15 +611,15 @@ bool ElfRebuilder::ReadSoInfo() {
             break;
             case DT_INIT:
                 si.init_func = reinterpret_cast<void*>(base + d->d_un.d_ptr);
-                FLOGD("%s constructors (DT_INIT) found at %x", si.name, d->d_un.d_ptr);
+                FLOGD("%s constructors (DT_INIT) found at %" ADDRESS_FORMAT "x", si.name, d->d_un.d_ptr);
                 break;
             case DT_FINI:
                 si.fini_func = reinterpret_cast<void*>(base + d->d_un.d_ptr);
-                FLOGD("%s destructors (DT_FINI) found at %x", si.name, d->d_un.d_ptr);
+                FLOGD("%s destructors (DT_FINI) found at %" ADDRESS_FORMAT "x", si.name, d->d_un.d_ptr);
                 break;
             case DT_INIT_ARRAY:
                 si.init_array = reinterpret_cast<void**>(base + d->d_un.d_ptr);
-                FLOGD("%s constructors (DT_INIT_ARRAY) found at %x", si.name, d->d_un.d_ptr);
+                FLOGD("%s constructors (DT_INIT_ARRAY) found at %" ADDRESS_FORMAT "x", si.name, d->d_un.d_ptr);
                 break;
             case DT_INIT_ARRAYSZ:
                 si.init_array_count = ((unsigned)d->d_un.d_val) / sizeof(Elf_Addr);
@@ -622,7 +627,7 @@ bool ElfRebuilder::ReadSoInfo() {
                 break;
             case DT_FINI_ARRAY:
                 si.fini_array = reinterpret_cast<void**>(base + d->d_un.d_ptr);
-                FLOGD("%s destructors (DT_FINI_ARRAY) found at %x", si.name, d->d_un.d_ptr);
+                FLOGD("%s destructors (DT_FINI_ARRAY) found at %" ADDRESS_FORMAT "x", si.name, d->d_un.d_ptr);
                 break;
             case DT_FINI_ARRAYSZ:
                 si.fini_array_count = ((unsigned)d->d_un.d_val) / sizeof(Elf_Addr);
@@ -630,7 +635,7 @@ bool ElfRebuilder::ReadSoInfo() {
                 break;
             case DT_PREINIT_ARRAY:
                 si.preinit_array = reinterpret_cast<void**>(base + d->d_un.d_ptr);
-                FLOGD("%s constructors (DT_PREINIT_ARRAY) found at %d", si.name, d->d_un.d_ptr);
+                FLOGD("%s constructors (DT_PREINIT_ARRAY) found at %" ADDRESS_FORMAT "d", si.name, d->d_un.d_ptr);
                 break;
             case DT_PREINIT_ARRAYSZ:
                 si.preinit_array_count = ((unsigned)d->d_un.d_val) / sizeof(Elf_Addr);
@@ -684,7 +689,7 @@ bool ElfRebuilder::ReadSoInfo() {
                 FLOGD("soname %s", si.name);
                 break;
             default:
-                FLOGD("Unused DT entry: type 0x%08x arg 0x%08x", d->d_tag, d->d_un.d_val);
+                FLOGD("Unused DT entry: type 0x%08" ADDRESS_FORMAT "x arg 0x%08" ADDRESS_FORMAT "x", d->d_tag, d->d_un.d_val);
                 break;
         }
     }

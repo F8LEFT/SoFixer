@@ -1,9 +1,15 @@
 # SoFixer
-so修復  
-注意看CMakeLists.txt中的 -D__SO64__ 选项，注释掉就是用来修复32位的。
+用于修复从内存中 dump 下来的So文件。
+## Build
+```shell
+mkdir build
+# 参数 -DSO_64=ON 用于修复64位so文件，不添加则为修复32位so文件
+cmake -DSO_64=ON ..
+make
+```
 
-# 使用方法
-從so中dump內存， ida腳本
+## 使用方法
+* 從so中dump內存， ida腳本
 ```$cpp
 import idaapi
 start_address = 0x0000007DB078B000
@@ -22,7 +28,7 @@ while cur < data_length:
 
 fp.close()
 ```
-执行修复
+* 执行修复
 ```$cpp
 sofixer -s orig.so -o fix.so -m 0x0 -d 
 -s 待修復的so路徑
@@ -31,9 +37,13 @@ sofixer -s orig.so -o fix.so -m 0x0 -d
 -d 輸出debug信息
 ```
 
-# 原理
-原理参考下面的文章
+## 原理
+原理参考下面的文章  
 TK so修复参考[http://bbs.pediy.com/thread-191649.htm]
 * 修复shdr
 * 修复phdr
 * 修复重定位
+
+## 已知问题
+在解析重定位表的时候有几个地方写错了，暂时懒得改，估计够用了，等出现新的修复so的
+理论的时候再一并更新吧
