@@ -9,7 +9,8 @@
 #ifndef ANDDBG_ALOG_H
 #define ANDDBG_ALOG_H
 
-#if !defined(NDEBUG)
+//#if !defined(NDEBUG)
+#if true
 
 #define TOSTR(fmt) #fmt
 #define FLFMT TOSTR([%s:%d])

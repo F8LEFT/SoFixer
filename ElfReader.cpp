@@ -163,10 +163,10 @@ bool ElfReader::VerifyElfHeader() {
         return false;
     }
 
-    if (header_.e_type != ET_DYN) {
-        FLOGE("\"%s\" has unexpected e_type: %d", name_, header_.e_type);
-        return false;
-    }
+//    if (header_.e_type != ET_DYN) {
+//        FLOGE("\"%s\" has unexpected e_type: %d", name_, header_.e_type);
+//        return false;
+//    }
 
     if (header_.e_version != EV_CURRENT) {
         FLOGE("\"%s\" has unexpected e_version: %d", name_, header_.e_version);
@@ -207,7 +207,7 @@ bool ElfReader::ReadProgramHeader() {
             phdr++;
         }
         // fix phdr, just load all data
-        std::vector<Elf32_Phdr*> loaded_phdrs;
+        std::vector<Elf_Phdr*> loaded_phdrs;
         for (auto i = 0; i < phdr_num_; i++) {
             auto phdr = &phdr_table_[i];
             if(phdr->p_type != PT_LOAD) continue;

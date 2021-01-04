@@ -51,8 +51,11 @@ public:
 
     Elf_Addr * plt_got = nullptr;
 
+    uint32_t plt_type = DT_REL;
     Elf_Rel* plt_rel = nullptr;
     size_t plt_rel_count = 0;
+    Elf_Rela* plt_rela = nullptr;
+    size_t plt_rela_count = 0;
 
     Elf_Rel* rel = nullptr;
     size_t rel_count = 0;
@@ -99,6 +102,8 @@ private:
     bool RebuildRelocs();
     bool RebuildFin();
 
+  template <bool isRela>
+  void relocate(uint8_t * base, Elf_Rel* rel, Elf_Addr dump_base);
     ElfReader* elf_reader_;
     soinfo si;
 
@@ -109,6 +114,7 @@ private:
     Elf_Word sDYNSTR = 0;
     Elf_Word sHASH = 0;
     Elf_Word sRELDYN = 0;
+    Elf_Word sRELADYN = 0;
     Elf_Word sRELPLT = 0;
     Elf_Word sPLT = 0;
     Elf_Word sTEXTTAB = 0;
@@ -124,6 +130,7 @@ private:
     std::vector<Elf_Shdr> shdrs;
     std::string shstrtab;
 
+  unsigned external_pointer = 0;
 private:
     bool isPatchInit = false;
 public:

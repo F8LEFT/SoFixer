@@ -3,6 +3,7 @@
 #include "ElfRebuilder.h"
 #include "FDebug.h"
 #include <getopt.h>
+#include <stdio.h>
 
 
 const char* short_options = "hdm:s:o:";
@@ -73,7 +74,11 @@ int main(int argc, char* argv[]) {
         printf("source so file cannot found!!!\n");
         return -1;
     }
+#ifdef __LARGE64_FILES
+  auto fd = file->_file;
+#else
     auto fd = fileno(file);
+#endif
 
     printf("start to rebuild elf file\n");
     elf_reader.setSource(source.c_str(), fd);
