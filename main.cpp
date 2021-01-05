@@ -5,6 +5,12 @@
 #include <getopt.h>
 #include <stdio.h>
 
+#ifdef __SO64__
+#define TARGET_NAME "SoFixer64"
+#else
+#define TARGET_NAME "SoFixer32"
+#endif
+
 
 const char* short_options = "hdm:s:o:b:";
 const struct option long_options[] = {
@@ -122,7 +128,7 @@ int main(int argc, char* argv[]) {
 }
 
 void useage() {
-    FLOGI("SoFixer v0.2 author F8LEFT(currwin)");
+    FLOGI(TARGET_NAME "v2.0 author F8LEFT(currwin)");
     FLOGI("Useage: SoFixer <option(s)> -s sourcefile -o generatefile");
     FLOGI(" try rebuild shdr with phdr");
     FLOGI(" Options are:");
