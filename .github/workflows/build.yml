@@ -27,7 +27,7 @@ jobs:
     - name: build32 Configure CMake
       shell: bash
       working-directory: ${{github.workspace}}/build32
-      run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=$BUILD_TYPE -GSO_64=OFF
+      run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DSO_64=OFF
 
     - name: build32 build
       working-directory: ${{github.workspace}}/build32
@@ -40,7 +40,7 @@ jobs:
     - name: build64 Configure CMake
       shell: bash
       working-directory: ${{github.workspace}}/build64
-      run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=$BUILD_TYPE -GSO_64=ON
+      run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DSO_64=ON
 
     - name: build64 build
       working-directory: ${{github.workspace}}/build64
