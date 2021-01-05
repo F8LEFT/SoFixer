@@ -75,7 +75,7 @@ int main(int argc, char* argv[]) {
         return -1;
     }
 #ifdef __LARGE64_FILES
-  auto fd = file->_file;
+    auto fd = file->_file;
 #else
     auto fd = fileno(file);
 #endif
@@ -101,7 +101,7 @@ int main(int argc, char* argv[]) {
             printf("output so file cannot write !!!\n");
             return -1;
         }
-        fwrite(elf_rebuilder.getRebuildData(), elf_rebuilder.getRebuildSize(), 1, file);
+        fwrite(elf_rebuilder.getRebuildData(), 1, elf_rebuilder.getRebuildSize(),  file);
         fclose(file);
     }
 
@@ -120,5 +120,4 @@ void useage() {
     printf("  -s --source sourceFilePath                 Source file path\n");
     printf("  -o --output generateFilePath               Generate file path\n");
     printf("  -h --help                                  Display this information\n");
-
 }

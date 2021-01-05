@@ -9,7 +9,7 @@
 #ifndef SOFIXER_ELFREADER_H
 #define SOFIXER_ELFREADER_H
 
-#include "exelf.h"
+#include "macros.h"
 
 #include <cstdint>
 #include <cstddef>

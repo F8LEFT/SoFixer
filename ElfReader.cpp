@@ -119,6 +119,7 @@ bool ElfReader::Load() {
     return ReadElfHeader() &&
            VerifyElfHeader() &&
            ReadProgramHeader() &&
+           // TODO READ dynamic from SECTION header (>= __ANDROID_API_O__)
            ReserveAddressSpace() &&
            LoadSegments() &&
            FindPhdr() &&
@@ -126,7 +127,7 @@ bool ElfReader::Load() {
 }
 
 bool ElfReader::ReadElfHeader() {
-    ssize_t rc = read(fd_, &header_, sizeof(header_));
+    ssize_t rc = TEMP_FAILURE_RETRY(read(fd_, &header_, sizeof(header_)));
     if (rc < 0) {
         FLOGE("can't read file \"%s\": %s", name_, strerror(errno));
         return false;
@@ -201,30 +202,35 @@ bool ElfReader::ReadProgramHeader() {
     if(dump_so_file_) {
         auto phdr = phdr_table_;
         for(auto i = 0; i < phdr_num_; i++) {
-            phdr->p_filesz = phdr->p_memsz;     // expend filesize to memsiz
             phdr->p_paddr = phdr->p_vaddr;
-            phdr->p_offset = phdr->p_vaddr;     // elf has been loaded.
+            phdr->p_filesz = phdr->p_memsz;     // expend filesize to memsiz
+            phdr->p_offset = phdr->p_vaddr;     // since elf has been loaded. just expand file data to dump memory data
+//            phdr->p_flags = 0                 // TODO fix flags by PT_TYPE
             phdr++;
         }
-        // fix phdr, just load all data
+        // some shell will release data between loadable phdr(s), just load all memory data
         std::vector<Elf_Phdr*> loaded_phdrs;
         for (auto i = 0; i < phdr_num_; i++) {
             auto phdr = &phdr_table_[i];
             if(phdr->p_type != PT_LOAD) continue;
             loaded_phdrs.push_back(phdr);
         }
+        std::sort(loaded_phdrs.begin(), loaded_phdrs.end(),
+                  [](Elf_Phdr * first, Elf_Phdr * second) {
+                      return first->p_vaddr < second->p_vaddr;
+                  });
         if (!loaded_phdrs.empty()) {
             for (unsigned long i = 0, total = loaded_phdrs.size(); i < total; i++) {
                 auto phdr = loaded_phdrs[i];
-              if (i != total - 1) {
-                // to next loaded segament
-                  auto nphdr = loaded_phdrs[i+1];
-                  phdr->p_memsz = nphdr->p_vaddr - phdr->p_vaddr;
-              } else {
-                  // to the file end
-                  phdr->p_memsz = file_size - phdr->p_vaddr;
-              }
-              phdr->p_filesz = phdr->p_memsz;
+                if (i != total - 1) {
+                    // to next loaded segament
+                    auto nphdr = loaded_phdrs[i+1];
+                    phdr->p_memsz = nphdr->p_vaddr - phdr->p_vaddr;
+                } else {
+                    // to the file end
+                    phdr->p_memsz = file_size - phdr->p_vaddr;
+                }
+                phdr->p_filesz = phdr->p_memsz;
             }
         }
     }
@@ -246,7 +252,11 @@ size_t phdr_table_get_load_size(const Elf_Phdr* phdr_table,
                                 Elf_Addr* out_min_vaddr,
                                 Elf_Addr* out_max_vaddr)
 {
-    Elf_Addr min_vaddr = 0xFFFFFFFFU;
+#ifdef __SO64__
+    Elf_Addr min_vaddr = UINT64_MAX;
+#else
+    Elf_Addr min_vaddr = UINT_MAX;
+#endif
     Elf_Addr max_vaddr = 0x00000000U;
 
     bool found_pt_load = false;
@@ -296,8 +306,11 @@ bool ElfReader::ReserveAddressSpace() {
     uint8_t* addr = reinterpret_cast<uint8_t*>(min_vaddr);
     // alloc map data, and load in addr
     uint8_t * start = new uint8_t[load_size_];
+    memset(start, 0, load_size_);
 
     load_start_ = start;
+    // the first loaded phdr data should be loaded in the start of load_start
+    // (load_bias_ + phdr.vaddr), so load_bias_ = load_start - phdr.vaddr(min_addr)
     load_bias_ = reinterpret_cast<uint8_t *>(reinterpret_cast<uintptr_t >(start)
        - reinterpret_cast<uintptr_t >(addr));
     return true;
@@ -320,8 +333,8 @@ bool ElfReader::LoadSegments() {
         Elf_Addr seg_start = phdr->p_vaddr;
         Elf_Addr seg_end   = seg_start + phdr->p_memsz;
 
-        Elf_Addr seg_page_start = PAGE_START(seg_start);
-        Elf_Addr seg_page_end   = PAGE_END(seg_end);
+//        Elf_Addr seg_page_start = PAGE_START(seg_start);
+//        Elf_Addr seg_page_end   = PAGE_END(seg_end);
 
         Elf_Addr seg_file_end   = seg_start + phdr->p_filesz;
 
@@ -329,14 +342,14 @@ bool ElfReader::LoadSegments() {
         Elf_Addr file_start = phdr->p_offset;
         Elf_Addr file_end   = file_start + phdr->p_filesz;
 
-        Elf_Addr file_page_start = PAGE_START(file_start);
-        Elf_Addr file_length = file_end - file_page_start;
+//        Elf_Addr file_page_start = PAGE_START(file_start);
+        Elf_Addr file_length = file_end - file_start;
 
 
         if (file_length != 0) {
             // memory data loading
-            void* load_point = seg_page_start + reinterpret_cast<uint8_t *>(load_bias_);
-            if(!LoadFileData(load_point, file_length, file_page_start)) {
+            void* load_point = seg_start + reinterpret_cast<uint8_t *>(load_bias_);
+            if(!LoadFileData(load_point, file_length, file_start)) {
                 FLOGE("couldn't map \"%s\" segment %zu: %s", name_, i, strerror(errno));
                 return false;
             }
@@ -345,20 +358,21 @@ bool ElfReader::LoadSegments() {
 
         // if the segment is writable, and does not end on a page boundary,
         // zero-fill it until the page limit.
-        if ((phdr->p_flags & PF_W) != 0 && PAGE_OFFSET(seg_file_end) > 0) {
-            memset(seg_file_end + reinterpret_cast<uint8_t *>(load_bias_), 0, PAGE_SIZE - PAGE_OFFSET(seg_file_end));
-        }
+//        if ((phdr->p_flags & PF_W) != 0 && PAGE_OFFSET(seg_file_end) > 0) {
+//            memset(seg_file_end + reinterpret_cast<uint8_t *>(load_bias_), 0, PAGE_SIZE - PAGE_OFFSET(seg_file_end));
+//        }
 
-        seg_file_end = PAGE_END(seg_file_end);
+//        seg_file_end = PAGE_END(seg_file_end);
 
         // seg_file_end is now the first page address after the file
         // content. If seg_end is larger, we need to zero anything
         // between them. This is done by using a private anonymous
         // map for all extra pages.
-        if (seg_page_end > seg_file_end) {
-            void* load_point = (uint8_t*)load_bias_ + seg_file_end;
-            memset(load_point, 0, seg_page_end - seg_file_end);
-        }
+        // since  data has been clear, just skip this step
+//        if (seg_page_end > seg_file_end) {
+//            void* load_point = (uint8_t*)load_bias_ + seg_file_end;
+//            memset(load_point, 0, seg_page_end - seg_file_end);
+//        }
     }
     return true;
 }
@@ -661,7 +675,7 @@ bool ElfReader::CheckPhdr(uint8_t * loaded) {
 
 bool ElfReader::LoadFileData(void *addr, size_t len, int offset) {
     lseek(fd_, offset, SEEK_SET);
-    auto rc = read(fd_, addr, len);
+    auto rc = TEMP_FAILURE_RETRY(read(fd_, addr, len));
 
     if (rc < 0) {
         FLOGE("can't read file \"%s\": %s", name_, strerror(errno));

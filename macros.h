@@ -50,4 +50,14 @@ typedef Elf64_Word Elf_Word;
 #define PAGE_END(x)    PAGE_START((x) + (PAGE_SIZE-1))
 #endif
 
+#ifndef TEMP_FAILURE_RETRY
+#define TEMP_FAILURE_RETRY(expression) \
+  (__extension__\
+   ({ long int __result;\
+       do __result = (long int)(expression);\
+       while(__result == -1L&& errno == EINTR);\
+       __result;}))
+#endif
+
+
 #endif //FAOATDUMP_EXELF_H
