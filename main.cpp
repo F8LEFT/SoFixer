@@ -128,7 +128,7 @@ int main(int argc, char* argv[]) {
 }
 
 void useage() {
-    FLOGI(TARGET_NAME "v2.0 author F8LEFT(currwin)");
+    FLOGI(TARGET_NAME "v2.1 author F8LEFT(currwin)");
     FLOGI("Useage: SoFixer <option(s)> -s sourcefile -o generatefile");
     FLOGI(" try rebuild shdr with phdr");
     FLOGI(" Options are:");
