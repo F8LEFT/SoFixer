@@ -10,9 +10,10 @@
 #define SOFIXER_ELFREBUILDER_H
 
 #include <cstdint>
-#include "ElfReader.h"
 #include <vector>
 #include <string>
+#include "ObElfReader.h"
+
 
 
 #define SOINFO_NAME_LEN 128
@@ -89,7 +90,7 @@ public:
 
 class ElfRebuilder {
 public:
-    ElfRebuilder(ElfReader* elf_reader);
+    ElfRebuilder(ObElfReader* elf_reader);
     ~ElfRebuilder() { if(rebuild_data != nullptr) delete []rebuild_data; }
     bool Rebuild();
 
@@ -104,7 +105,7 @@ private:
 
   template <bool isRela>
   void relocate(uint8_t * base, Elf_Rel* rel, Elf_Addr dump_base);
-    ElfReader* elf_reader_;
+    ObElfReader* elf_reader_;
     soinfo si;
 
     int rebuild_size = 0;

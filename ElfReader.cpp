@@ -275,7 +275,7 @@ bool ElfReader::ReserveAddressSpace() {
     // the first loaded phdr data should be loaded in the start of load_start
     // (load_bias_ + phdr.vaddr), so load_bias_ = load_start - phdr.vaddr(min_addr)
     load_bias_ = reinterpret_cast<uint8_t *>(reinterpret_cast<uintptr_t >(start)
-       - reinterpret_cast<uintptr_t >(addr));
+                                             - reinterpret_cast<uintptr_t >(addr));
     return true;
 }
 
@@ -488,7 +488,7 @@ phdr_table_protect_gnu_relro(const Elf_Phdr* phdr_table,
     return _phdr_table_set_gnu_relro_prot(phdr_table,
                                           phdr_count,
                                           load_bias,
-                                          /*PROT_READ*/0);
+            /*PROT_READ*/0);
 }
 
 

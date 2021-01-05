@@ -8,6 +8,7 @@
 #define SOFIXER_OBELFREADER_H
 
 #include "ElfReader.h"
+class ElfRebuilder;
 
 class ObElfReader: public ElfReader {
 public:
@@ -36,6 +37,8 @@ private:
     void* dynamic_sections_ = nullptr;
     size_t dynamic_count_;
     Elf_Word dynamic_flags_;
+
+    friend class ElfRebuilder;
 
 };
 
