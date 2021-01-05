@@ -2,16 +2,33 @@ name: auto build and release
 
 on: 
   push:
-    tags:
-      - v*     # Push events for all vx tags
+#    tags:
+#      - v*     # Push events for all vx tags
 
 env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
   BUILD_TYPE: Release
 
 jobs:
+  create_release:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: '${{ github.ref }}'
+        release_name: 'Release ${{ github.ref }}'
+        draft: true
+        prerelease: false
+    outputs:
+      UPLOAD_URL: ${{ steps.create_release.outputs.upload_url }}
 
   build:
+    needs: [create_release]
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
@@ -46,16 +63,6 @@ jobs:
       shell: bash
       run: cmake --build . --config $BUILD_TYPE
 
-    - name: Create Release
-      id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: '${{ github.ref }}-${{ runner.os }}'
-        release_name: 'Release ${{ github.ref }}-${{ runner.os }}'
-        draft: false
-        prerelease: false
 
     - name: Name Format
       id: release_name_format
@@ -67,7 +74,7 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        upload_url: '${{ steps.create_release.outputs.upload_url }}'
+        upload_url: '${{ needs.create_release.outputs.UPLOAD_URL }}'
         asset_path: '${{ github.workspace }}/build32/SoFixer32${{ steps.release_name_format.outputs.format }}'
         asset_name: 'SoFixer-${{ runner.os }}-32${{ steps.release_name_format.outputs.format }}'
         asset_content_type: application/octet-stream
@@ -77,7 +84,7 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        upload_url: '${{ steps.create_release.outputs.upload_url }}'
+        upload_url: '${{ needs.create_release.outputs.UPLOAD_URL }}'
         asset_path: '${{ github.workspace }}/build64/SoFixer64${{ steps.release_name_format.outputs.format }}'
         asset_name: 'SoFixer-${{ runner.os }}-64${{ steps.release_name_format.outputs.format }}'
         asset_content_type: application/octet-stream
