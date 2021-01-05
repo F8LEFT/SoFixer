@@ -2,8 +2,8 @@ name: auto build and release
 
 on: 
   push:
-#    tags:
-#      - v*     # Push events for all vx tags
+    tags:
+      - v*     # Push events for all vx tags
 
 env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
