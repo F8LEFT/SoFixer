@@ -1,9 +1,9 @@
-name: CMake
+name: auto build and release
 
 on: 
   push:
     branches: 
-      - main
+      - master
       - release/*
 
 env:
