@@ -12,7 +12,8 @@ env:
   BUILD_TYPE: Release
 
 jobs:
-  build32:
+
+  build:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
@@ -47,3 +48,33 @@ jobs:
       shell: bash
       run: cmake --build . --config $BUILD_TYPE
 
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: Release ${{ github.ref }}
+        draft: false
+        prerelease: true
+
+    - name: Upload build 32
+      uses: actions/upload-release-asset@v1.0.2
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: '${{ steps.create_release.outputs.upload_url }}'
+        asset_path: '${{ github.workspace }}/build32/SoFixer32'
+        asset_name: 'SoFixer${{ matrix.os }}-32'
+        asset_content_type: application/octet-stream
+
+  - name: Upload build 64
+      uses: actions/upload-release-asset@v1.0.2
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: '${{ steps.create_release.outputs.upload_url }}'
+        asset_path: '${{ github.workspace }}/build64/SoFixer64'
+        asset_name: 'SoFixer${{ matrix.os }}-64'
+        asset_content_type: application/octet-stream
