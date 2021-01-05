@@ -216,9 +216,9 @@ size_t phdr_table_get_load_size(const Elf_Phdr* phdr_table,
                                 Elf_Addr* out_max_vaddr)
 {
 #ifdef __SO64__
-    Elf_Addr min_vaddr = UINT64_MAX;
+    Elf_Addr min_vaddr = 0xFFFFFFFFFFFFFFFFU;
 #else
-    Elf_Addr min_vaddr = UINT_MAX;
+    Elf_Addr min_vaddr = 0xFFFFFFFFU;
 #endif
     Elf_Addr max_vaddr = 0x00000000U;
 

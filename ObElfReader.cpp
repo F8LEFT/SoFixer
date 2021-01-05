@@ -7,6 +7,7 @@
 #include "ObElfReader.h"
 
 #include <vector>
+#include <algorithm>
 
 void ObElfReader::FixDumpSoPhdr() {
     if (dump_so_base_ != 0)
