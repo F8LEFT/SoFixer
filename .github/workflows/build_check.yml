@@ -9,7 +9,6 @@ env:
 
 jobs:
   build:
-    needs: [create_release]
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
