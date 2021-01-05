@@ -16,7 +16,7 @@ else()
     set(TARGET_NAME SoFixer32)
 endif()
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Werror")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 set(ROOT_SRC ElfReader.cpp
         ElfRebuilder.cpp
         ObElfReader.cpp)
