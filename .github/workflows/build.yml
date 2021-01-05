@@ -2,10 +2,8 @@ name: auto build and release
 
 on: 
   push:
-    branches: 
-      - master
-      - release/*
-      - action/*
+    tags:
+      - v*     # Push events for all vx tags
 
 env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
@@ -56,8 +54,8 @@ jobs:
       with:
         tag_name: ${{ runner.os }} ${{ github.ref }}
         release_name: Release ${{ runner.os }} ${{ github.ref }}
-        draft: true
-        prerelease: true
+        draft: false
+        prerelease: false
 
     - name: Name Format
       id: release_name_format
