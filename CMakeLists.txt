@@ -15,6 +15,8 @@ else()
 endif()
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Werror")
-aux_source_directory(. ROOT_SRC)
+set(ROOT_SRC ElfReader.cpp
+        ElfRebuilder.cpp
+        ObElfReader.cpp)
 
-add_executable(SoFixer ${ROOT_SRC} )
+add_executable(SoFixer ${ROOT_SRC} main.cpp)

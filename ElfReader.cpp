@@ -99,7 +99,7 @@
                                       MAYBE_MAP_FLAG((x), PF_R, PROT_READ) | \
                                       MAYBE_MAP_FLAG((x), PF_W, PROT_WRITE))
 ElfReader::ElfReader()
-        : source_(nullptr), name_(nullptr), fd_(-1),
+        : source_(nullptr), name_(nullptr),
           phdr_num_(0), phdr_mmap_(NULL), phdr_table_(NULL), phdr_size_(0),
           load_start_(NULL), load_size_(0), load_bias_(0),
           loaded_phdr_(NULL) {
@@ -112,6 +112,9 @@ ElfReader::~ElfReader() {
     if(load_start_ != nullptr) {
         delete [](uint8_t*)load_start_;
     }
+    if (source_ != nullptr) {
+        delete source_;
+    }
 }
 
 bool ElfReader::Load() {
@@ -122,16 +125,11 @@ bool ElfReader::Load() {
            // TODO READ dynamic from SECTION header (>= __ANDROID_API_O__)
            ReserveAddressSpace() &&
            LoadSegments() &&
-           FindPhdr() &&
-           PatchPhdr();
+           FindPhdr();
 }
 
 bool ElfReader::ReadElfHeader() {
-    ssize_t rc = TEMP_FAILURE_RETRY(read(fd_, &header_, sizeof(header_)));
-    if (rc < 0) {
-        FLOGE("can't read file \"%s\": %s", name_, strerror(errno));
-        return false;
-    }
+    auto rc = source_->Read(&header_, sizeof(header_));
     if (rc != sizeof(header_)) {
         FLOGE("\"%s\" is too small to be an ELF executable", name_);
         return false;
@@ -191,7 +189,7 @@ bool ElfReader::ReadProgramHeader() {
 
     phdr_size_ = phdr_num_ * sizeof(Elf_Phdr);
     void* mmap_result = new uint8_t[phdr_size_];
-    if(!LoadFileData(mmap_result, phdr_size_, header_.e_phoff)) {
+    if(!source_->Read(mmap_result, phdr_size_, header_.e_phoff)) {
         FLOGE("\"%s\" has no valid phdr data", name_);
         return false;
     }
@@ -199,41 +197,6 @@ bool ElfReader::ReadProgramHeader() {
     phdr_mmap_ = mmap_result;
     phdr_table_ = reinterpret_cast<Elf_Phdr*>(reinterpret_cast<char*>(mmap_result));
 
-    if(dump_so_file_) {
-        auto phdr = phdr_table_;
-        for(auto i = 0; i < phdr_num_; i++) {
-            phdr->p_paddr = phdr->p_vaddr;
-            phdr->p_filesz = phdr->p_memsz;     // expend filesize to memsiz
-            phdr->p_offset = phdr->p_vaddr;     // since elf has been loaded. just expand file data to dump memory data
-//            phdr->p_flags = 0                 // TODO fix flags by PT_TYPE
-            phdr++;
-        }
-        // some shell will release data between loadable phdr(s), just load all memory data
-        std::vector<Elf_Phdr*> loaded_phdrs;
-        for (auto i = 0; i < phdr_num_; i++) {
-            auto phdr = &phdr_table_[i];
-            if(phdr->p_type != PT_LOAD) continue;
-            loaded_phdrs.push_back(phdr);
-        }
-        std::sort(loaded_phdrs.begin(), loaded_phdrs.end(),
-                  [](Elf_Phdr * first, Elf_Phdr * second) {
-                      return first->p_vaddr < second->p_vaddr;
-                  });
-        if (!loaded_phdrs.empty()) {
-            for (unsigned long i = 0, total = loaded_phdrs.size(); i < total; i++) {
-                auto phdr = loaded_phdrs[i];
-                if (i != total - 1) {
-                    // to next loaded segament
-                    auto nphdr = loaded_phdrs[i+1];
-                    phdr->p_memsz = nphdr->p_vaddr - phdr->p_vaddr;
-                } else {
-                    // to the file end
-                    phdr->p_memsz = file_size - phdr->p_vaddr;
-                }
-                phdr->p_filesz = phdr->p_memsz;
-            }
-        }
-    }
     return true;
 }
 
@@ -349,7 +312,7 @@ bool ElfReader::LoadSegments() {
         if (file_length != 0) {
             // memory data loading
             void* load_point = seg_start + reinterpret_cast<uint8_t *>(load_bias_);
-            if(!LoadFileData(load_point, file_length, file_start)) {
+            if(!source_->Read(load_point, file_length, file_start)) {
                 FLOGE("couldn't map \"%s\" segment %zu: %s", name_, i, strerror(errno));
                 return false;
             }
@@ -646,12 +609,6 @@ bool ElfReader::FindPhdr() {
     return false;
 }
 
-bool ElfReader::PatchPhdr() {
-    const Elf_Phdr* phdr_limit = phdr_table_ + phdr_num_;
-    memcpy((void*)loaded_phdr_, (void*)phdr_table_, (uintptr_t)phdr_limit - (uintptr_t)phdr_table_ );
-    return true;
-}
-
 // Ensures that our program header is actually within a loadable
 // segment. This should help catch badly-formed ELF files that
 // would cause the linker to crash later when trying to access it.
@@ -673,24 +630,46 @@ bool ElfReader::CheckPhdr(uint8_t * loaded) {
     return false;
 }
 
-bool ElfReader::LoadFileData(void *addr, size_t len, int offset) {
-    lseek(fd_, offset, SEEK_SET);
-    auto rc = TEMP_FAILURE_RETRY(read(fd_, addr, len));
+void ElfReader::ApplyPhdrTable() {
+    const Elf_Phdr* phdr_limit = phdr_table_ + phdr_num_;
+    memcpy((void*)loaded_phdr_, (void*)phdr_table_, (uintptr_t)phdr_limit - (uintptr_t)phdr_table_ );
+    return ;
+}
 
-    if (rc < 0) {
-        FLOGE("can't read file \"%s\": %s", name_, strerror(errno));
+
+bool ElfReader::setSource(const char *source) {
+    name_ = source;
+    auto fr = new FileReader(source);
+    if (!fr->Open()) {
+        delete fr;
         return false;
     }
-    if (rc != len) {
-        FLOGE("\"%s\" has no enough data at %x:%zx, not a valid file or you need to dump more data", name_, offset, len);
-        return false;
-    }
+    file_size = fr->FileSize();
+    source_ = fr;
     return true;
 }
 
-void ElfReader::setSource(const char *source, int fd) {
-    name_ = source;
-    fd_ = fd;
-    file_size = lseek(fd_, 0L, SEEK_END);
-    lseek(fd_, 0L, SEEK_SET);
+void ElfReader::GetDynamicSection(Elf_Dyn **dynamic, size_t *dynamic_count, Elf_Word *dynamic_flags) {
+    const Elf_Phdr* phdr = phdr_table_;
+    const Elf_Phdr* phdr_limit = phdr + phdr_num_;
+
+    for (phdr = phdr_table_; phdr < phdr_limit; phdr++) {
+        if (phdr->p_type != PT_DYNAMIC) {
+            continue;
+        }
+
+        *dynamic = reinterpret_cast<Elf_Dyn*>(load_bias_ + phdr->p_vaddr);
+        if (dynamic_count) {
+            *dynamic_count = (unsigned)(phdr->p_memsz / sizeof(Elf_Dyn));
+        }
+        if (dynamic_flags) {
+            *dynamic_flags = phdr->p_flags;
+        }
+        return;
+    }
+    *dynamic = NULL;
+    if (dynamic_count) {
+        *dynamic_count = 0;
+    }
 }
+
