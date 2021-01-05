@@ -27,7 +27,7 @@ jobs:
     outputs:
       UPLOAD_URL: ${{ steps.create_release.outputs.upload_url }}
 
-  build:
+  publish:
     needs: [create_release]
     strategy:
       matrix:

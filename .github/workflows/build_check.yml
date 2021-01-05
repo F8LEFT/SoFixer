@@ -1,0 +1,46 @@
+name: check build error
+
+on: 
+  push:
+
+env:
+  # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
+  BUILD_TYPE: Release
+
+jobs:
+  build:
+    needs: [create_release]
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: build32 environment create
+      run: cmake -E make_directory ${{github.workspace}}/build32
+
+    - name: build32 Configure CMake
+      shell: bash
+      working-directory: ${{github.workspace}}/build32
+      run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DSO_64=OFF -G "CodeBlocks - Unix Makefiles"
+
+    - name: build32 build
+      working-directory: ${{github.workspace}}/build32
+      shell: bash
+      run: cmake --build . --config $BUILD_TYPE
+
+    - name: build64 environment create
+      run: cmake -E make_directory ${{github.workspace}}/build64
+
+    - name: build64 Configure CMake
+      shell: bash
+      working-directory: ${{github.workspace}}/build64
+      run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DSO_64=ON -G "CodeBlocks - Unix Makefiles"
+
+    - name: build64 build
+      working-directory: ${{github.workspace}}/build64
+      shell: bash
+      run: cmake --build . --config $BUILD_TYPE
+
