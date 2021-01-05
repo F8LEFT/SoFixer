@@ -59,14 +59,19 @@ jobs:
         draft: true
         prerelease: true
 
+    - name: Name Format
+      id: release_name_format
+      if: ${{ runner.os == 'Windows' }}
+      run: echo "::set-output name=format::.exe"
+
     - name: Upload build 32
       uses: actions/upload-release-asset@v1.0.2
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: '${{ steps.create_release.outputs.upload_url }}'
-        asset_path: '${{ github.workspace }}/build32/SoFixer32'
-        asset_name: 'SoFixer-${{ runner.os }}-32'
+        asset_path: '${{ github.workspace }}/build32/SoFixer32${{ steps.release_name_format.outputs.format }}'
+        asset_name: 'SoFixer-${{ runner.os }}-32${{ steps.release_name_format.outputs.format }}'
         asset_content_type: application/octet-stream
 
     - name: Upload build 64
@@ -75,6 +80,6 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: '${{ steps.create_release.outputs.upload_url }}'
-        asset_path: '${{ github.workspace }}/build64/SoFixer64'
-        asset_name: 'SoFixer-${{ runner.os }}-64'
+        asset_path: '${{ github.workspace }}/build64/SoFixer64${{ steps.release_name_format.outputs.format }}'
+        asset_name: 'SoFixer-${{ runner.os }}-64${{ steps.release_name_format.outputs.format }}'
         asset_content_type: application/octet-stream
