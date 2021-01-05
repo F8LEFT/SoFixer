@@ -52,7 +52,7 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        tag_name: ${{ github.ref }}
+        tag_name: '${{ github.ref }}-${{ runner.os }}'
         release_name: 'Release ${{ github.ref }}-${{ runner.os }}'
         draft: false
         prerelease: false
