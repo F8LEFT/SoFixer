@@ -136,7 +136,7 @@ void useage() {
     FLOGI("  -d --debug                                 Show debug info");
     FLOGI("  -m --memso memBaseAddr(16bit format)       the memory address x which the source so is dump from");
     FLOGI("  -s --source sourceFilePath                 Source file path");
-    FLOGI("  -b --baseso baseFilePath                   Original so file path.(used to get base information)");
+    FLOGI("  -b --baseso baseFilePath                   Original so file path.(used to get base information)(experimental)");
     FLOGI("  -o --output generateFilePath               Generate file path");
     FLOGI("  -h --help                                  Display this information");
 }

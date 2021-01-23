@@ -30,8 +30,7 @@ fp.close()
 ```
 * 执行修复
 ```$cpp
-sofixer -b orig.so -s soruce.so -o fix.so -m 0x0 -d 
--b 原始的so路径(未加载的so文件，用于获取额外信息)
+sofixer  -s soruce.so -o fix.so -m 0x0 -d 
 -s 待修復的so路徑
 -o 修復後的so路徑
 -m 內存dump的基地址(16位) 0xABC
