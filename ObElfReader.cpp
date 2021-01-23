@@ -10,8 +10,33 @@
 #include <algorithm>
 
 void ObElfReader::FixDumpSoPhdr() {
-    if (dump_so_base_ != 0)
-        return;
+    // some shell will release data between loadable phdr(s), just load all memory data
+    if (dump_so_base_ != 0) {
+        std::vector<Elf_Phdr*> loaded_phdrs;
+        for (auto i = 0; i < phdr_num_; i++) {
+            auto phdr = &phdr_table_[i];
+            if(phdr->p_type != PT_LOAD) continue;
+            loaded_phdrs.push_back(phdr);
+        }
+        std::sort(loaded_phdrs.begin(), loaded_phdrs.end(),
+                  [](Elf_Phdr * first, Elf_Phdr * second) {
+                      return first->p_vaddr < second->p_vaddr;
+                  });
+        if (!loaded_phdrs.empty()) {
+            for (unsigned long i = 0, total = loaded_phdrs.size(); i < total; i++) {
+                auto phdr = loaded_phdrs[i];
+                if (i != total - 1) {
+                    // to next loaded segament
+                    auto nphdr = loaded_phdrs[i+1];
+                    phdr->p_memsz = nphdr->p_vaddr - phdr->p_vaddr;
+                } else {
+                    // to the file end
+                    phdr->p_memsz = file_size - phdr->p_vaddr;
+                }
+                phdr->p_filesz = phdr->p_memsz;
+            }
+        }
+    }
 
     auto phdr = phdr_table_;
     for(auto i = 0; i < phdr_num_; i++) {
@@ -20,31 +45,6 @@ void ObElfReader::FixDumpSoPhdr() {
         phdr->p_offset = phdr->p_vaddr;     // since elf has been loaded. just expand file data to dump memory data
 //            phdr->p_flags = 0                 // TODO fix flags by PT_TYPE
         phdr++;
-    }
-    // some shell will release data between loadable phdr(s), just load all memory data
-    std::vector<Elf_Phdr*> loaded_phdrs;
-    for (auto i = 0; i < phdr_num_; i++) {
-        auto phdr = &phdr_table_[i];
-        if(phdr->p_type != PT_LOAD) continue;
-        loaded_phdrs.push_back(phdr);
-    }
-    std::sort(loaded_phdrs.begin(), loaded_phdrs.end(),
-              [](Elf_Phdr * first, Elf_Phdr * second) {
-                  return first->p_vaddr < second->p_vaddr;
-              });
-    if (!loaded_phdrs.empty()) {
-        for (unsigned long i = 0, total = loaded_phdrs.size(); i < total; i++) {
-            auto phdr = loaded_phdrs[i];
-            if (i != total - 1) {
-                // to next loaded segament
-                auto nphdr = loaded_phdrs[i+1];
-                phdr->p_memsz = nphdr->p_vaddr - phdr->p_vaddr;
-            } else {
-                // to the file end
-                phdr->p_memsz = file_size - phdr->p_vaddr;
-            }
-            phdr->p_filesz = phdr->p_memsz;
-        }
     }
 }
 
