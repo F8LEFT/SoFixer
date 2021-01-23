@@ -22,7 +22,7 @@ ElfRebuilder::ElfRebuilder(ObElfReader *elf_reader) {
 }
 
 bool ElfRebuilder::RebuildPhdr() {
-    FLOGD("=======================RebuildPhdr=========================");
+    FLOGD("=============LoadDynamicSectionFromBaseSource==========RebuildPhdr=========================");
 
 
     auto phdr = (Elf_Phdr*)elf_reader_->loaded_phdr();
@@ -357,37 +357,37 @@ bool ElfRebuilder::RebuildShdr() {
     }
 
     // get .got
-    if(si.plt_got != nullptr) {
-        // global_offset_table
-        sGOT = shdrs.size();
-        auto sLast = sGOT - 1;
-
-        Elf_Shdr shdr;
-        shdr.sh_name = shstrtab.length();
-        shstrtab.append(".got");
-        shstrtab.push_back('\0');
-
-        shdr.sh_type = SHT_PROGBITS;
-        shdr.sh_flags = SHF_ALLOC | SHF_WRITE;
-        shdr.sh_addr = shdrs[sLast].sh_addr + shdrs[sLast].sh_size;
-        // Align8??
-        while (shdr.sh_addr & 0x7) {
-            shdr.sh_addr ++;
-        }
-
-        shdr.sh_offset = shdr.sh_addr;
-        shdr.sh_size = (uintptr_t)(si.plt_got + si.plt_rel_count) - shdr.sh_addr - (uintptr_t)base + 3 * sizeof(Elf_Addr);
-        shdr.sh_link = 0;
-        shdr.sh_info = 0;
-#ifdef __SO64__
-        shdr.sh_addralign = 8;
-#else
-        shdr.sh_addralign = 4;
-#endif
-        shdr.sh_entsize = 0x0;
-
-        shdrs.push_back(shdr);
-    }
+//    if(si.plt_got != nullptr) {
+//        // global_offset_table
+//        sGOT = shdrs.size();
+//        auto sLast = sGOT - 1;
+//
+//        Elf_Shdr shdr;
+//        shdr.sh_name = shstrtab.length();
+//        shstrtab.append(".got");
+//        shstrtab.push_back('\0');
+//
+//        shdr.sh_type = SHT_PROGBITS;
+//        shdr.sh_flags = SHF_ALLOC | SHF_WRITE;
+//        shdr.sh_addr = shdrs[sLast].sh_addr + shdrs[sLast].sh_size;
+//        // Align8??
+//        while (shdr.sh_addr & 0x7) {
+//            shdr.sh_addr ++;
+//        }
+//
+//        shdr.sh_offset = shdr.sh_addr;
+//        shdr.sh_size = (uintptr_t)(si.plt_got + si.plt_rel_count) - shdr.sh_addr - (uintptr_t)base + 3 * sizeof(Elf_Addr);
+//        shdr.sh_link = 0;
+//        shdr.sh_info = 0;
+//#ifdef __SO64__
+//        shdr.sh_addralign = 8;
+//#else
+//        shdr.sh_addralign = 4;
+//#endif
+//        shdr.sh_entsize = 0x0;
+//
+//        shdrs.push_back(shdr);
+//    }
 
     // gen .data
     if(true) {
@@ -552,6 +552,7 @@ bool ElfRebuilder::ReadSoInfo() {
     si.phnum = elf_reader_->phdr_count();
     auto base = si.load_bias;
     phdr_table_get_load_size(si.phdr, si.phnum, &si.min_load, &si.max_load);
+    si.max_load += elf_reader_->pad_size_;
 
     /* Extract dynamic section */
     elf_reader_->GetDynamicSection(&si.dynamic, &si.dynamic_count, &si.dynamic_flags);

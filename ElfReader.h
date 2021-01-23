@@ -41,7 +41,7 @@ protected:
     bool ReadElfHeader();
     bool VerifyElfHeader();
     bool ReadProgramHeader();
-    bool ReserveAddressSpace();
+    bool ReserveAddressSpace(uint32_t padding_size = 0);
     bool LoadSegments();
     bool FindPhdr();
     bool CheckPhdr(uint8_t *);
@@ -64,6 +64,7 @@ protected:
     uint8_t * load_start_;
     // Size in bytes of reserved address space.
     Elf_Addr load_size_;
+    Elf_Addr pad_size_;
     size_t file_size;
     // Load bias.
     uint8_t * load_bias_;

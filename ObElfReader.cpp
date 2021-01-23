@@ -53,31 +53,51 @@ bool ObElfReader::Load() {
     if (!ReadElfHeader() || !VerifyElfHeader() || !ReadProgramHeader())
         return false;
     FixDumpSoPhdr();
-    if (!ReserveAddressSpace() ||
+
+    bool has_base_dynamic_info = false;
+    uint32_t base_dynamic_size = 0;
+    if (!haveDynamicSectionInLoadableSegment()) {
+        // try to get dynamic information from base so file.
+        // TODO fix bug in dynamic section rebuild.
+        LoadDynamicSectionFromBaseSource();
+        has_base_dynamic_info = dynamic_sections_ != nullptr;
+        if (has_base_dynamic_info) {
+            base_dynamic_size = dynamic_count_ * sizeof(Elf_Dyn);
+        }
+    } else {
+        FLOGI("dynamic segment have been found in loadable segment, "
+              "argument baseso will be ignored.");
+    }
+
+    if (!ReserveAddressSpace(base_dynamic_size) ||
         !LoadSegments() ||
         !FindPhdr()) {
         return false;
     }
+    if (has_base_dynamic_info) {
+        // Copy dynamic information to the end of the file.
+        ApplyDynamicSection();
+    }
+
     ApplyPhdrTable();
 
-    LoadDynamicSection();
     return true;
 }
 
-void ObElfReader::GetDynamicSection(Elf_Dyn **dynamic, size_t *dynamic_count, Elf_Word *dynamic_flags) {
-    if (dynamic_sections_ == nullptr) {
-        ElfReader::GetDynamicSection(dynamic, dynamic_count, dynamic_flags);
-        return;
-    }
-    *dynamic = reinterpret_cast<Elf_Dyn*>(dynamic_sections_);
-    if (dynamic_count) {
-        *dynamic_count = dynamic_count_;
-    }
-    if (dynamic_flags) {
-        *dynamic_flags = dynamic_flags_;
-    }
-    return;
-}
+//void ObElfReader::GetDynamicSection(Elf_Dyn **dynamic, size_t *dynamic_count, Elf_Word *dynamic_flags) {
+//    if (dynamic_sections_ == nullptr) {
+//        ElfReader::GetDynamicSection(dynamic, dynamic_count, dynamic_flags);
+//        return;
+//    }
+//    *dynamic = reinterpret_cast<Elf_Dyn*>(dynamic_sections_);
+//    if (dynamic_count) {
+//        *dynamic_count = dynamic_count_;
+//    }
+//    if (dynamic_flags) {
+//        *dynamic_flags = dynamic_flags_;
+//    }
+//    return;
+//}
 
 ObElfReader::~ObElfReader() {
     if (dynamic_sections_ != nullptr) {
@@ -85,7 +105,7 @@ ObElfReader::~ObElfReader() {
     }
 }
 
-bool ObElfReader::LoadDynamicSection() {
+bool ObElfReader::LoadDynamicSectionFromBaseSource() {
     if (baseso_ == nullptr) {
         return false;
     }
@@ -116,6 +136,48 @@ bool ObElfReader::LoadDynamicSection() {
         return true;
     }
 
+    return false;
+}
+
+void ObElfReader::ApplyDynamicSection() {
+    if (dynamic_sections_ == nullptr)
+        return;
+    uint8_t * wbuf_start = load_start_ + load_size_;
+    uint32_t dynamic_size = dynamic_count_ * sizeof(Elf_Dyn);
+    if (pad_size_ < dynamic_size)
+        return;
+    // copy directly
+    memcpy(wbuf_start, dynamic_sections_, dynamic_size);
+    // fix phdr header
+    for (auto p = phdr_table_, pend = phdr_table_+ phdr_num_; p < pend; p++) {
+        if (p->p_type == PT_DYNAMIC) {
+            p->p_vaddr = wbuf_start - load_bias_;
+            p->p_paddr = p->p_vaddr;
+            p->p_offset = p->p_vaddr;
+
+            p->p_memsz = dynamic_size;
+            p->p_filesz = p->p_memsz;
+            break;
+        }
+    }
+}
+
+bool ObElfReader::haveDynamicSectionInLoadableSegment() {
+    Elf_Addr min_vaddr, max_vaddr;
+    phdr_table_get_load_size(phdr_table_, phdr_num_, &min_vaddr, &max_vaddr);
+
+    const Elf_Phdr* phdr = phdr_table_;
+    const Elf_Phdr* phdr_limit = phdr + phdr_num_;
+
+    for (phdr = phdr_table_; phdr < phdr_limit; phdr++) {
+        if (phdr->p_type != PT_DYNAMIC) {
+            continue;
+        }
+        if (phdr->p_vaddr > min_vaddr && (phdr->p_vaddr + phdr->p_memsz) < max_vaddr) {
+            return true;
+        }
+        break;
+    }
     return false;
 }
 

@@ -258,18 +258,21 @@ size_t phdr_table_get_load_size(const Elf_Phdr* phdr_table,
 // Reserve a virtual address range big enough to hold all loadable
 // segments of a program header table. This is done by creating a
 // private anonymous mmap() with PROT_NONE.
-bool ElfReader::ReserveAddressSpace() {
+bool ElfReader::ReserveAddressSpace(uint32_t padding_size) {
     Elf_Addr min_vaddr;
     load_size_ = phdr_table_get_load_size(phdr_table_, phdr_num_, &min_vaddr);
     if (load_size_ == 0) {
         FLOGE("\"%s\" has no loadable segments", name_);
         return false;
     }
+    pad_size_ = padding_size;
+
+    uint32_t alloc_size = load_size_ + pad_size_;
 
     uint8_t* addr = reinterpret_cast<uint8_t*>(min_vaddr);
     // alloc map data, and load in addr
-    uint8_t * start = new uint8_t[load_size_];
-    memset(start, 0, load_size_);
+    uint8_t * start = new uint8_t[alloc_size];
+    memset(start, 0, alloc_size);
 
     load_start_ = start;
     // the first loaded phdr data should be loaded in the start of load_start

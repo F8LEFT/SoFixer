@@ -18,7 +18,7 @@ public:
     void FixDumpSoPhdr();
 
     bool Load() override;
-    bool LoadDynamicSection();
+    bool LoadDynamicSectionFromBaseSource();
 
     void setDumpSoBaseAddr(Elf_Addr base) { dump_so_base_ = base; }
 
@@ -26,17 +26,19 @@ public:
         baseso_ = name;
     }
 
-    void GetDynamicSection(Elf_Dyn** dynamic, size_t* dynamic_count, Elf_Word* dynamic_flags) override;
-
+//    void GetDynamicSection(Elf_Dyn** dynamic, size_t* dynamic_count, Elf_Word* dynamic_flags) override;
+    bool haveDynamicSectionInLoadableSegment();
 
 private:
+    void ApplyDynamicSection();
+
     Elf_Addr dump_so_base_ = 0;
 
     const char* baseso_ = nullptr;
 
     void* dynamic_sections_ = nullptr;
-    size_t dynamic_count_;
-    Elf_Word dynamic_flags_;
+    size_t dynamic_count_ = 0;
+    Elf_Word dynamic_flags_ = 0;
 
     friend class ElfRebuilder;
 
