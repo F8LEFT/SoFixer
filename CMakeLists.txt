@@ -16,7 +16,13 @@ else()
     set(TARGET_NAME SoFixer32)
 endif()
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -static -static-libgcc -static-libstdc++")
+
+
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+if(MINGW)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static -static-libgcc -static-libstdc++")
+endif()
+
 set(ROOT_SRC ElfReader.cpp
         ElfRebuilder.cpp
         ObElfReader.cpp)
